@@ -19,7 +19,7 @@
     def  ~(. (default-agent this %|) bowl)
 ++  on-init
   ^-  (quip card _this)
-  ~&  >  '%msg initialized successfully'
+  ~&  >  '%vuvuzela-client initialized successfully'
   =.  state  [%0 ~]
   `this
 ::
@@ -30,24 +30,24 @@
 ++  on-load
   |=  old-state=vase
   ^-  (quip card _this)
-  ~&  >  '%msg recompiled successfully, cleaning history...'
+  ~&  >  '%vuvuzela-client recompiled successfully, cleaning history...'
   `this(state [%0 ~])
 ::
 ++  on-poke
   |=  [=mark =vase]
   ^-  (quip card _this)
   ?+    mark  (on-poke:def mark vase)
-      %msg-action
-    ~&  >  "message action detected"
-    ~&  >>>  vase
-    =^  cards  state
-    (handle-action !<(action:vuvuzela vase) bowl)
-    [cards this]
       %noun
-    ~&  >  "noun detected"
-    =^  cards  state
-    (handle-action !<(action:vuvuzela vase) bowl)
-    [cards this]
+    ?+    q.vase  (on-poke:def mark vase)
+        action:vuvuzela
+      =^  cards  state
+      (handle-action !<(action:vuvuzela vase) bowl)
+      [cards this]
+        [%receive-message @]
+      =^  cards  state
+      (handle-received-message +.q.vase bowl)
+      [cards this]
+    ==
   ==
 ::
 ++  on-watch  on-watch:def
@@ -56,29 +56,46 @@
 ++  on-agent
   |=  [=wire =sign:agent:gall]
   ^-  (quip card _this)
-  ~&  >  "agent action detected"
+  ~&  >  "message received by {<src.bowl>}"
   `this
 ++  on-arvo   on-arvo:def
 ++  on-fail   on-fail:def
 --
 |%
+++  handle-received-message
+  |=  [text=@t =bowl:gall]
+  ~&  >>  "received message {<text>} from {<src.bowl>}"
+  ^-  (quip card _state)
+  :-  ~
+    %=  state
+      chat  %:  update-chat
+              chat.state
+              src.bowl
+              [now.bowl text %.n]
+            ==
+    ==
 ++  handle-action
   |=  [=action:vuvuzela =bowl:gall]
   ^-  (quip card _state)
-  ~&  >>  "handling action..."
-  ~&  >>>  action
   ?-    -.action
       %send-message
     ~&  >>  "sending message {<text.action>} to {<ship.action>}"
-    :_  state(chat (update-chat chat.state ship.action [now.bowl text.action %.y]))
-    ~[[%pass /msg-wire %agent [ship.action %msg] %poke %msg-action !>([%receive-message text.action])]]
-      %receive-message
-    ~&  >>  "received message {<text.action>} from {<src.bowl>}"
-    `state(chat (update-chat chat.state src.bowl [now.bowl text.action %.n]))
+    :_  %=  state
+          chat  %:  update-chat
+                  chat.state
+                  ship.action
+                  [now.bowl text.action %.y]
+                ==
+        ==
+    :~
+      :*  %pass  /vuvuzela-wire  %agent
+          [ship.action %vuvuzela-client]
+          %poke  %noun  !>([%receive-message text.action])
+      ==
+    ==
     ::
       %show-chat
-    ~&  >>  "showing chat with {<ship.action>}"
-    ~&  >>>  (~(get by chat.state) ship.action)
+    ~&  >>>  :-(ship.action (~(get by chat.state) ship.action))
     `state
   ==
   ::

@@ -38,7 +38,8 @@
   ^-  (quip card _this)
   ?+    mark  (on-poke:def mark vase)
       %noun
-    ?+    q.vase
+    ?+    q.vase  (on-poke:def mark vase)
+        action:vuvuzela
       =^  cards  state
       (handle-action !<(action:vuvuzela vase) bowl)
       [cards this]
