@@ -14,3 +14,8 @@ cp ~/permanent/code/hoon/vuvuzela/home/sur/vuvuzela.hoon ~/permanent/programs/ur
 # server files
 cp ~/permanent/code/hoon/vuvuzela/home/app/vuvuzela-server.hoon ~/permanent/programs/urbit/vuvuzela/$SERVER_SHIP/home/app/vuvuzela-server.hoon
 cp ~/permanent/code/hoon/vuvuzela/home/sur/vuvuzela.hoon ~/permanent/programs/urbit/vuvuzela/$SERVER_SHIP/home/sur/vuvuzela.hoon
+
+# commit
+screen -S ship1 -X stuff '|commit %home\015'
+screen -S ship2 -X stuff '|commit %home\015'
+
