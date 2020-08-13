@@ -35,7 +35,6 @@
   |=  old-state=vase
   ^-  (quip card _this)
   ~&  >  '%vuvuzela-client recompiled successfully, cleaning history...'
-  =/  whatever  (generate-keys bowl)
   `this(state [%0 ~])
 ::
 ++  on-poke
@@ -69,9 +68,13 @@
 --
 |%
 ++  handle-received-message
-  |=  [[text=@t sender=@p] =bowl:gall]
-  ~&  >>  "received message {<text>} from {<sender>} through {<src.bowl>}"
+  |=  [[blob=@ sender=@p] =bowl:gall]
   ^-  (quip card _state)
+  =/  key  (generate-key bowl)
+  =/  decrypt  (de:crub:crypto key blob)
+  ?~  decrypt  ~&(>>> "failed to decrypt" `state)
+  =/  text=@t  +.decrypt
+  ~&  >>  "received message {<text>} from {<sender>} through {<src.bowl>}"
   :-  ~
     %=  state
       chat  %:  update-chat
@@ -86,10 +89,12 @@
   ?-    -.action
       %send-message
     ~&  >>  "sending message {<text.action>} to {<ship.action>} through {<server>}"
+    =/  key  (generate-key bowl)
     :-  :~
           :*  %pass  /vuvuzela-wire  %agent
               [server %vuvuzela-server]
-              %poke  %noun  !>([%forward-message text.action ship.action])
+              %poke  %noun
+              !>([%forward-message (en:crub:crypto key text.action) ship.action])
           ==
         ==
     %=  state
@@ -113,7 +118,7 @@
   ::  Create fake keys for testing fake ships
   ::  ~milrys-soglec and ~dapnep-ronmyl
   ::
-  ++  generate-keys
+  ++  generate-key
     |=  =bowl:gall
     ^-  @uwsymmetrickey
     =/  vane  (ames !>(..zuse))
@@ -126,10 +131,5 @@
     =.  crypto-core.ames-state.their-vane  (pit:nu:crub:crypto 512 (shaz their))
     =/  their-pub  pub:ex:crypto-core.ames-state.their-vane
     =/  sym  (derive-symmetric-key:vane their-pub our-sec)
-    ~&  >>  "our: {<our>}"
-    ~&  >>  "their: {<their>}"
-    ~&  >>  "our-sec: {<our-sec>}"
-    ~&  >>  "their-pub: {<their-pub>}"
-    ~&  >>  "sym: {<sym>}"
     sym
 --

@@ -53,14 +53,14 @@
 --
 |%
 ++  handle-forward-message
-  |=  [[text=@t recipient=@p] =bowl:gall]
-  ~&  >>  "forwarding message {<text>} from {<src.bowl>} to {<recipient>}"
+  |=  [[blob=@ recipient=@p] =bowl:gall]
+  ~&  >>  "forwarding message from {<src.bowl>} to {<recipient>}"
   ^-  (quip card _state)
   :_  state
   :~
     :*  %pass  /vuvuzela-wire  %agent
         [recipient %vuvuzela-client]
-        %poke  %noun  !>([%receive-message text src.bowl])
+        %poke  %noun  !>([%receive-message blob src.bowl])
     ==
   ==
 --
