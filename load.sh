@@ -18,4 +18,5 @@ cp ~/permanent/code/hoon/vuvuzela/home/sur/vuvuzela.hoon ~/permanent/programs/ur
 # commit
 screen -S ship1 -X stuff '|commit %home\015'
 screen -S ship2 -X stuff '|commit %home\015'
+screen -S ship3 -X stuff '|commit %home\015'
 

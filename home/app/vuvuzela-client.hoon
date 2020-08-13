@@ -1,5 +1,5 @@
 /-  vuvuzela
-/+  default-agent
+/+  default-agent, dbug
 |%
 +$  versioned-state
     $%  state-zero
@@ -10,7 +10,10 @@
     ==
 ::
 +$  card  card:agent:gall
+::
+++  server  ~marzod
 --
+%-  agent:dbug
 =|  state=versioned-state
 ^-  agent:gall
 =<
@@ -38,14 +41,15 @@
   ^-  (quip card _this)
   ?+    mark  (on-poke:def mark vase)
       %noun
-    ?+    q.vase  (on-poke:def mark vase)
+    =/  payload  q.vase
+    ?+    payload  (on-poke:def mark vase)
         action:vuvuzela
       =^  cards  state
       (handle-action !<(action:vuvuzela vase) bowl)
       [cards this]
-        [%receive-message @]
+        [%receive-message @ @]
       =^  cards  state
-      (handle-received-message +.q.vase bowl)
+      (handle-received-message +.payload bowl)
       [cards this]
     ==
   ==
@@ -56,21 +60,21 @@
 ++  on-agent
   |=  [=wire =sign:agent:gall]
   ^-  (quip card _this)
-  ~&  >  "message received by {<src.bowl>}"
+  ~&  >  "package received by {<src.bowl>}"
   `this
 ++  on-arvo   on-arvo:def
 ++  on-fail   on-fail:def
 --
 |%
 ++  handle-received-message
-  |=  [text=@t =bowl:gall]
-  ~&  >>  "received message {<text>} from {<src.bowl>}"
+  |=  [[text=@t sender=@p] =bowl:gall]
+  ~&  >>  "received message {<text>} from {<sender>} through {<src.bowl>}"
   ^-  (quip card _state)
   :-  ~
     %=  state
       chat  %:  update-chat
               chat.state
-              src.bowl
+              sender
               [now.bowl text %.n]
             ==
     ==
@@ -79,19 +83,19 @@
   ^-  (quip card _state)
   ?-    -.action
       %send-message
-    ~&  >>  "sending message {<text.action>} to {<ship.action>}"
-    :_  %=  state
-          chat  %:  update-chat
-                  chat.state
-                  ship.action
-                  [now.bowl text.action %.y]
-                ==
+    ~&  >>  "sending message {<text.action>} to {<ship.action>} through {<server>}"
+    :-  :~
+          :*  %pass  /vuvuzela-wire  %agent
+              [server %vuvuzela-server]
+              %poke  %noun  !>([%forward-message text.action ship.action])
+          ==
         ==
-    :~
-      :*  %pass  /vuvuzela-wire  %agent
-          [ship.action %vuvuzela-client]
-          %poke  %noun  !>([%receive-message text.action])
-      ==
+    %=  state
+      chat  %:  update-chat
+              chat.state
+              ship.action
+              [now.bowl text.action %.y]
+            ==
     ==
     ::
       %show-chat

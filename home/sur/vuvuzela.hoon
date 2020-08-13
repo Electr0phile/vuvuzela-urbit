@@ -1,6 +1,6 @@
 |%
 +$  message  [date=@da text=@t my=?(%.y %.n)]
-:::
+::
 +$  chat  (map ship=@p (list message))
 ::
 +$  action
