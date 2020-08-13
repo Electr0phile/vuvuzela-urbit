@@ -1,5 +1,6 @@
 /-  vuvuzela
 /+  default-agent, dbug
+/=  ames  /sys/vane/ames
 |%
 +$  versioned-state
     $%  state-zero
@@ -34,6 +35,7 @@
   |=  old-state=vase
   ^-  (quip card _this)
   ~&  >  '%vuvuzela-client recompiled successfully, cleaning history...'
+  =/  whatever  (generate-keys bowl)
   `this(state [%0 ~])
 ::
 ++  on-poke
@@ -108,4 +110,26 @@
   =/  messages  (fall (~(get by chat) ship) ~)
   =/  updated-messages  (snoc messages message)
   (~(put by chat) ship updated-messages)
+  ::  Create fake keys for testing fake ships
+  ::  ~milrys-soglec and ~dapnep-ronmyl
+  ::
+  ++  generate-keys
+    |=  =bowl:gall
+    ^-  @uwsymmetrickey
+    =/  vane  (ames !>(..zuse))
+    =/  our  our.bowl
+    =/  their  ?:(=(our ~milrys-soglec) ~dapnep-ronmyl ~milrys-soglec)
+    =/  our-vane  vane
+    =/  their-vane  vane
+    =.  crypto-core.ames-state.our-vane  (pit:nu:crub:crypto 512 (shaz our))
+    =/  our-sec  sec:ex:crypto-core.ames-state.our-vane
+    =.  crypto-core.ames-state.their-vane  (pit:nu:crub:crypto 512 (shaz their))
+    =/  their-pub  pub:ex:crypto-core.ames-state.their-vane
+    =/  sym  (derive-symmetric-key:vane their-pub our-sec)
+    ~&  >>  "our: {<our>}"
+    ~&  >>  "their: {<their>}"
+    ~&  >>  "our-sec: {<our-sec>}"
+    ~&  >>  "their-pub: {<their-pub>}"
+    ~&  >>  "sym: {<sym>}"
+    sym
 --
