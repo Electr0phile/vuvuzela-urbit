@@ -12,7 +12,7 @@
 ::
 +$  card  card:agent:gall
 ::
-++  server  ~marzod
+++  server  ~nus
 --
 %-  agent:dbug
 =|  state=versioned-state
@@ -111,19 +111,18 @@
   ==
   ::
   ++  update-chat
-  |=  [=chat:vuvuzela ship=@p =message:vuvuzela]
-  =/  messages  (fall (~(get by chat) ship) ~)
-  =/  updated-messages  (snoc messages message)
-  (~(put by chat) ship updated-messages)
+    |=  [=chat:vuvuzela ship=@p =message:vuvuzela]
+    =/  messages  (fall (~(get by chat) ship) ~)
+    =/  updated-messages  (snoc messages message)
+    (~(put by chat) ship updated-messages)
   ::  Create fake keys for testing fake ships
-  ::  ~milrys-soglec and ~dapnep-ronmyl
   ::
   ++  generate-key
     |=  =bowl:gall
     ^-  @uwsymmetrickey
     =/  vane  (ames !>(..zuse))
     =/  our  our.bowl
-    =/  their  ?:(=(our ~milrys-soglec) ~dapnep-ronmyl ~milrys-soglec)
+    =/  their  ?:(=(our ~bud) ~nec ~bud)
     =/  our-vane  vane
     =/  their-vane  vane
     =.  crypto-core.ames-state.our-vane  (pit:nu:crub:crypto 512 (shaz our))
