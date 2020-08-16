@@ -16,6 +16,10 @@ Important points:
 Current implementation specifics:
 - Checking for empty dead drop yields no response
   from the server.
+- Server can switch between manual and automatic
+  round rotation. This is only temporary, an actual
+  server in the future will be unable to stop round
+  rotation.
 
 Plan:
 >> 0. Ships can exchange end-to-end encrypted messages

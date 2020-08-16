@@ -5,15 +5,20 @@
     ==
 ::
 +$  state-zero
-    $:  [%0 drops=(map dead-drop encrypted-message) round=@ wake-time=@da manual-rounds=?]
+    $:  [%0 drops=(map dead-drop message) round=@ wake-time=@da manual-rounds=? requests=(list request)]
     ==
 ::
++$  request
+    $%
+      [%leave-dead-drop =message =dead-drop]
+      [%check-dead-drop =dead-drop]
+    ==
 +$  dead-drop  @uvH
-+$  encrypted-message  @
++$  message  @
 ::
 +$  card  card:agent:gall
 ::
-++  servers  (limo ~[~nus ~wes ~zod])
+++  servers  (limo ~[~nus ~nus])
 ++  round-duration  ~s1
 --
 %-  agent:dbug
@@ -26,7 +31,7 @@
 ++  on-init
   ^-  (quip card _this)
   ~&  >  '%vuvuzela-server initialized successfully'
-  =.  state  [%0 ~ 0 now.bowl %.y]
+  =.  state  [%0 ~ 0 now.bowl %.y ~]
   `this
 ::
 ++  on-save
@@ -37,7 +42,7 @@
   |=  old-state=vase
   ^-  (quip card _this)
   ~&  >  '%vuvuzela-server recompiled successfully'
-  `this(state [%0 ~ 0 now.bowl %.y])
+  `this(state [%0 ~ 0 now.bowl %.y ~])
 ::
 ++  on-poke
   |=  [=mark =vase]
@@ -46,18 +51,23 @@
       %noun
     =/  payload  q.vase
     ?+    payload  (on-poke:def mark vase)
-        [%leave-dead-drop @ @]
+      ::
+        request
+      ~&  >  "request queued"
+      `this(state state(requests (snoc requests.state payload)))
+      ::
+        [%process-requests *]
+      =/  requests  ((list request) +.payload)
+      ~&  >  "processing requests..."
       =^  cards  state
-      (leave-dead-drop +.payload)
+      (process-requests requests)
       [cards this]
-        [%check-dead-drop @]
-      =^  cards  state
-      (check-dead-drop +.payload src.bowl)
-      [cards this]
+      ::
         %rest
       ~&  >  "resting..."
       :_  this(state state(manual-rounds %.y))
       [%pass /vuvuzela/timer %arvo %b %rest wake-time.state]~
+      ::
         %wait
       ~&  >  "waiting again..."
       =/  wake-time  (add now.bowl round-duration)
@@ -65,11 +75,16 @@
       :~  [%give %fact ~[/vuvuzela/rounds] %atom !>(+(round.state))]
           [%pass /vuvuzela/timer %arvo %b %wait wake-time]
       ==
+      ::
+        %send-out-requests
+      :_  this
+      [%pass /vuvuzela/chain/forward %agent [~nus %vuvuzela-server] %poke %noun !>([%process-requests requests.state])]~
+      ::
         %reset-round
       ?.  manual-rounds.state
         ~&  >>  "not in manual mode! use %rest to switch to manual rounds"
         `this
-      :_  this(state state(round +(round.state), drops ~))
+      :_  this(state state(round +(round.state), drops ~, requests ~))
       [%give %fact ~[/vuvuzela/rounds] %atom !>(+(round.state))]~
     ==
   ==
@@ -96,7 +111,7 @@
       [%vuvuzela %timer ~]
     ~&  >>>  "resetting round"
     =/  wake-time  (add now.bowl round-duration)
-    :_  this(state state(round +(round.state), wake-time wake-time, drops ~))
+    :_  this(state state(round +(round.state), wake-time wake-time, drops ~, requests ~))
     :~  [%give %fact ~[/vuvuzela/rounds] %atom !>(+(round.state))]
         [%pass /vuvuzela/timer %arvo %b %wait wake-time]
     ==
@@ -104,6 +119,10 @@
 ++  on-fail   on-fail:def
 --
 |%
+++  process-requests
+  |=  [requests=(list request)]
+  ~&  >>  requests
+  `state
 ++  leave-dead-drop
   |=  [message=@ dead-drop=@]
   ~&  >>  "received dead drop {<dead-drop>}"
