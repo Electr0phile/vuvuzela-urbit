@@ -9,6 +9,7 @@ for client in $CLIENTS
 do
   cp ~/permanent/code/hoon/vuvuzela/home/app/vuvuzela-client.hoon ~/permanent/programs/urbit/vuvuzela/$client/home/app/vuvuzela-client.hoon
   cp -r ~/permanent/code/hoon/vuvuzela/home/sur/* ~/permanent/programs/urbit/vuvuzela/$client/home/sur/
+  cp -r ~/permanent/code/hoon/vuvuzela/home/gen/* ~/permanent/programs/urbit/vuvuzela/$client/home/gen/
 done
 
 # server files
@@ -16,6 +17,7 @@ for server in $SERVERS
 do
   cp ~/permanent/code/hoon/vuvuzela/home/app/vuvuzela-server.hoon ~/permanent/programs/urbit/vuvuzela/$server/home/app/vuvuzela-server.hoon
   cp -r ~/permanent/code/hoon/vuvuzela/home/sur/ ~/permanent/programs/urbit/vuvuzela/$server/home/sur/
+  cp -r ~/permanent/code/hoon/vuvuzela/home/gen/ ~/permanent/programs/urbit/vuvuzela/$server/home/gen/
 done
 
 # commit

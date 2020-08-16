@@ -5,6 +5,9 @@ Relevant particularities of Urbit in relation to Vuvuzela:
   However, our threat models include situations
   where all but one servers are compromized. Thus
   we still have to perform onion encryption.
+- states are versioned, no information is ever lost,
+  everything stays in history. Bad for correlation
+  attacks?
 
 Important points:
 - Each round you cand send one message and receive
@@ -20,7 +23,15 @@ through one server.
 >> 1. Dead drop logic with just one server.
 >> 2. Round logic with just one server.
   >> a. Manual round logic.
-  b. Timed round logic using behn.
+  >> b. Timed round logic using behn.
+  c. Gathering of incoming requests in the
+     beginning of round, then simultaneous processing.
+  d. Client-side logic for resending unread
+  messages.
 3. Chain of servers (no permutations).
 4. Permutations.
 5. Noise messages.
+6. Make packets same size.
+...
+X. Make graphical interface on React.
+
