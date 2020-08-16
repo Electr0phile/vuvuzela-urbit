@@ -70,23 +70,23 @@
 --
 |%
 ++  handle-leave-dead-drop
-  |=  [encrypted-message=@ dead-drop=@]
+  |=  [message=@ dead-drop=@]
   ~&  >>  "received dead drop {<dead-drop>}"
   ^-  (quip card _state)
-  `state(drops (~(put by drops.state) dead-drop encrypted-message))
+  `state(drops (~(put by drops.state) dead-drop message))
 ++  handle-check-dead-drop
   |=  [dead-drop=@ src=@p]
   ^-  (quip card _state)
   ~&  >>>  "requested dead drop {<dead-drop>} by {<src>}"
-  =/  encrypted-message  (~(get by drops.state) dead-drop)
-  ?~  encrypted-message
+  =/  message  (~(get by drops.state) dead-drop)
+  ?~  message
     `state
   :_  state
   :~
     :*  %pass  /vuvuzela-wire  %agent
         [src %vuvuzela-client]
         %poke  %noun
-        !>([%receive-message +.encrypted-message])
+        !>([%receive-message +.message])
     ==
   ==
 --

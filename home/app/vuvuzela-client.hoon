@@ -13,6 +13,7 @@
 +$  card  card:agent:gall
 ::
 ++  servers  (limo ~[~nus ~wes ~zod])
+++  entry-server  (snag 0 servers)
 --
 %-  agent:dbug
 =|  state=versioned-state
@@ -46,11 +47,11 @@
     ?+    payload  (on-poke:def mark vase)
         action:vuvuzela
       =^  cards  state
-      (handle-action !<(action:vuvuzela vase) bowl)
+      (handle-action !<(action:vuvuzela vase) our.bowl now.bowl)
       [cards this]
         [%receive-message @]
       =^  cards  state
-      (handle-received-message +.payload bowl)
+      (handle-receive-message +.payload bowl)
       [cards this]
     ==
   ==
@@ -67,44 +68,27 @@
 ++  on-fail   on-fail:def
 --
 |%
-++  handle-received-message
-  |=  [blob=@ =bowl:gall]
+++  handle-receive-message
+  |=  [message=@ =bowl:gall]
   ^-  (quip card _state)
-  =/  key  (generate-key bowl)
-  =/  decrypt  (de:crub:crypto key blob)
-  ?~  decrypt  ~&(>>> "failed to decrypt" `state)
-  =/  text=@t  +.decrypt
+  =/  key  (generate-key our.bowl ?:(=(our.bowl ~bud) ~nec ~bud))
+  =/  decrypted  (de:crub:crypto key message)
+  ?~  decrypted  ~&(>>> "failed to decrypt" `state)
+  =/  text=@t  +.decrypted
   ~&  >>  "received message {<text>} through {<src.bowl>}"
   `state
 ++  handle-action
-  |=  [=action:vuvuzela =bowl:gall]
+  |=  [=action:vuvuzela our=@p now=@da]
   ^-  (quip card _state)
   ?-    -.action
-      %leave-dead-drop
-    =/  server  (snag 0 servers)
-    =/  key  (generate-key bowl)
-    =/  encrypted-message  (en:crub:crypto key text.action)
-    =/  dead-drop  (sham [0 key])
-    ~&  >>  "sending message {<text.action>} to {<ship.action>} through {<server>}"
-    ~&  >>  "dead drop: {<dead-drop>}"
-    :-  :~
-          :*  %pass  /vuvuzela-wire  %agent
-              [server %vuvuzela-server]
-              %poke  %noun
-              !>([%leave-dead-drop encrypted-message dead-drop])
-          ==
-        ==
-    %=  state
-      chat  %:  update-chat
-              chat.state
-              ship.action
-              [now.bowl text.action %.y]
-            ==
-    ==
+    ::
+      %show-chat
+    ~&  >>>  :-(ship.action (~(get by chat.state) ship.action))
+    `state
     ::
       %check-dead-drop
     =/  server  (snag 0 servers)
-    =/  key  (generate-key bowl)
+    =/  key  (generate-key our ?:(=(our ~bud) ~nec ~bud))
     =/  dead-drop  (sham [0 key])
     :_  state
     :~
@@ -115,9 +99,27 @@
       ==
     ==
     ::
-      %show-chat
-    ~&  >>>  :-(ship.action (~(get by chat.state) ship.action))
-    `state
+      %leave-dead-drop
+    =/  key  (generate-key our ?:(=(our ~bud) ~nec ~bud))
+    =/  message  (en:crub:crypto key text.action)
+    =/  dead-drop  (sham [0 key])
+    ~&  >>  "sending message {<text.action>} to"
+    ~&  >>  "{<ship.action>} through {<entry-server>}"
+    ~&  >>  "dead drop: {<dead-drop>}"
+    :-  :~
+          :*  %pass  /vuvuzela-wire  %agent
+              [entry-server %vuvuzela-server]
+              %poke  %noun
+              !>([%leave-dead-drop message dead-drop])
+          ==
+        ==
+    %=  state
+      chat  %:  update-chat
+              chat.state
+              ship.action
+              [now text.action %.y]
+            ==
+    ==
   ==
   ::
   ++  update-chat
@@ -128,11 +130,9 @@
   ::  Create fake keys for testing fake ships
   ::
   ++  generate-key
-    |=  =bowl:gall
+    |=  [our=@p their=@p]
     ^-  @uwsymmetrickey
     =/  vane  (ames !>(..zuse))
-    =/  our  our.bowl
-    =/  their  ?:(=(our ~bud) ~nec ~bud)
     =/  our-vane  vane
     =/  their-vane  vane
     =.  crypto-core.ames-state.our-vane  (pit:nu:crub:crypto 512 (shaz our))

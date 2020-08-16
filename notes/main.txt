@@ -11,9 +11,9 @@ Important points:
   one message.
 
 Plan:
-0. Ships can exchange end-to-end encrypted messages
+>> 0. Ships can exchange end-to-end encrypted messages
 through one server.
-1. Dead drop logic with just one server.
+>> 1. Dead drop logic with just one server.
 2. Round logic with just one server.
 3. Chain of servers (no permutations).
 4. Permutations.
