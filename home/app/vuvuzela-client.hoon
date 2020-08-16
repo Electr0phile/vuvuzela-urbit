@@ -1,4 +1,3 @@
-/-  vuvuzela
 /+  default-agent, dbug
 /=  ames  /sys/vane/ames
 |%
@@ -7,10 +6,13 @@
     ==
 ::
 +$  state-zero
-    $:  [%0 =chat:vuvuzela round-partner=(unit @p) round=@]
+    $:  [%0 =chat round-partner=(unit @p) round=@]
     ==
 ::
 +$  card  card:agent:gall
+::
++$  message  [date=@da text=@t my=?(%.y %.n)]
++$  chat  (map ship=@p (list message))
 ::
 ++  servers  (limo ~[~nus ~wes ~zod])
 ++  entry-server  (snag 0 servers)
@@ -43,16 +45,31 @@
   ^-  (quip card _this)
   ?+    mark  (on-poke:def mark vase)
       %noun
-    =/  payload  q.vase
-    ?+    payload  (on-poke:def mark vase)
-        action:vuvuzela
+    ?+    q.vase  (on-poke:def mark vase)
+        [%check-dead-drop @]
       =^  cards  state
-      (handle-action !<(action:vuvuzela vase) our.bowl now.bowl)
+      (check-dead-drop `@p`+.q.vase our.bowl now.bowl)
+      [cards this]
+        [%leave-dead-drop @ @]
+      =^  cards  state
+      (leave-dead-drop +<.q.vase +>.q.vase our.bowl now.bowl)
       [cards this]
         [%receive-message @]
       =^  cards  state
-      (handle-receive-message +.payload our.bowl now.bowl)
+      (receive-message +.q.vase our.bowl now.bowl)
       [cards this]
+        %subscribe
+      :_  this
+      :~
+        :*  %pass  /vuvuzela/rounds/(scot %p our.bowl)  %agent
+            [entry-server %vuvuzela-server]
+            [%watch /vuvuzela/rounds]
+        ==
+      ==
+        [%show-chat @]
+      =/  ship  `@p`+.q.vase
+      ~&  >>>  :-(ship (~(get by chat.state) ship))
+      `this
     ==
   ==
 ::
@@ -77,7 +94,7 @@
 ++  on-fail   on-fail:def
 --
 |%
-++  handle-receive-message
+++  receive-message
   |=  [message=@ our=@p now=@da]
   ^-  (quip card _state)
   =/  key  (generate-key our ?:(=(our ~bud) ~nec ~bud))
@@ -94,64 +111,46 @@
     chat  %:  update-chat
             chat.state
             +.round-partner.state
+            [now text %.n]
+          ==
+  ==
+++  check-dead-drop
+  |=  [ship=@p our=@p now=@da]
+  =/  key  (generate-key our ship)
+  =/  dead-drop  (sham [round.state key])
+  :_  state(round-partner (some ship))
+  :~
+    :*  %pass  /vuvuzela  %agent
+        [entry-server %vuvuzela-server]
+        %poke  %noun
+        !>([%check-dead-drop dead-drop])
+    ==
+  ==
+++  leave-dead-drop
+  |=  [text=@t ship=@p our=@p now=@da]
+  =/  key  (generate-key our ?:(=(our ~bud) ~nec ~bud))
+  =/  message  (en:crub:crypto key text)
+  =/  dead-drop  (sham [round.state key])
+  ~&  >>  "sending message {<text>} to"
+  ~&  >>  "{<ship>} through {<entry-server>}"
+  ~&  >>  "dead drop: {<dead-drop>}"
+  :-  :~
+        :*  %pass  /vuvuzela  %agent
+            [entry-server %vuvuzela-server]
+            %poke  %noun
+            !>([%leave-dead-drop message dead-drop])
+        ==
+      ==
+  %=  state
+    chat  %:  update-chat
+            chat.state
+            ship
             [now text %.y]
           ==
   ==
-++  handle-action
-  |=  [=action:vuvuzela our=@p now=@da]
-  ^-  (quip card _state)
-  ?-    -.action
-    ::
-      %subscribe
-    :_  state
-    :~
-      :*  %pass  /vuvuzela/rounds/(scot %p our)  %agent
-          [entry-server %vuvuzela-server]
-          [%watch /vuvuzela/rounds]
-      ==
-    ==
-    ::
-      %show-chat
-    ~&  >>>  :-(ship.action (~(get by chat.state) ship.action))
-    `state
-    ::
-      %check-dead-drop
-    =/  key  (generate-key our ship.action)
-    =/  dead-drop  (sham [round.state key])
-    :_  state(round-partner (some ship.action))
-    :~
-      :*  %pass  /vuvuzela  %agent
-          [entry-server %vuvuzela-server]
-          %poke  %noun
-          !>([%check-dead-drop dead-drop])
-      ==
-    ==
-    ::
-      %leave-dead-drop
-    =/  key  (generate-key our ?:(=(our ~bud) ~nec ~bud))
-    =/  message  (en:crub:crypto key text.action)
-    =/  dead-drop  (sham [round.state key])
-    ~&  >>  "sending message {<text.action>} to"
-    ~&  >>  "{<ship.action>} through {<entry-server>}"
-    ~&  >>  "dead drop: {<dead-drop>}"
-    :-  :~
-          :*  %pass  /vuvuzela  %agent
-              [entry-server %vuvuzela-server]
-              %poke  %noun
-              !>([%leave-dead-drop message dead-drop])
-          ==
-        ==
-    %=  state
-      chat  %:  update-chat
-              chat.state
-              ship.action
-              [now text.action %.y]
-            ==
-    ==
-  ==
   ::
   ++  update-chat
-    |=  [=chat:vuvuzela ship=@p =message:vuvuzela]
+    |=  [=chat ship=@p =message]
     =/  messages  (fall (~(get by chat) ship) ~)
     =/  updated-messages  (snoc messages message)
     (~(put by chat) ship updated-messages)

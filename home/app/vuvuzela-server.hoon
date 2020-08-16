@@ -1,4 +1,3 @@
-/-  vuvuzela
 /+  default-agent, dbug
 |%
 +$  versioned-state
