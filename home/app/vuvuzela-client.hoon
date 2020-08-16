@@ -48,7 +48,7 @@
       =^  cards  state
       (handle-action !<(action:vuvuzela vase) bowl)
       [cards this]
-        [%receive-message @ @]
+        [%receive-message @]
       =^  cards  state
       (handle-received-message +.payload bowl)
       [cards this]
@@ -68,34 +68,30 @@
 --
 |%
 ++  handle-received-message
-  |=  [[blob=@ sender=@p] =bowl:gall]
+  |=  [blob=@ =bowl:gall]
   ^-  (quip card _state)
   =/  key  (generate-key bowl)
   =/  decrypt  (de:crub:crypto key blob)
   ?~  decrypt  ~&(>>> "failed to decrypt" `state)
   =/  text=@t  +.decrypt
-  ~&  >>  "received message {<text>} from {<sender>} through {<src.bowl>}"
-  :-  ~
-    %=  state
-      chat  %:  update-chat
-              chat.state
-              sender
-              [now.bowl text %.n]
-            ==
-    ==
+  ~&  >>  "received message {<text>} through {<src.bowl>}"
+  `state
 ++  handle-action
   |=  [=action:vuvuzela =bowl:gall]
   ^-  (quip card _state)
   ?-    -.action
-      %send-message
+      %leave-dead-drop
     =/  server  (snag 0 servers)
-    ~&  >>  "sending message {<text.action>} to {<ship.action>} through {<server>}"
     =/  key  (generate-key bowl)
+    =/  encrypted-message  (en:crub:crypto key text.action)
+    =/  dead-drop  (sham [0 key])
+    ~&  >>  "sending message {<text.action>} to {<ship.action>} through {<server>}"
+    ~&  >>  "dead drop: {<dead-drop>}"
     :-  :~
           :*  %pass  /vuvuzela-wire  %agent
               [server %vuvuzela-server]
               %poke  %noun
-              !>([%forward-message (en:crub:crypto key text.action) ship.action])
+              !>([%leave-dead-drop encrypted-message dead-drop])
           ==
         ==
     %=  state
@@ -104,6 +100,19 @@
               ship.action
               [now.bowl text.action %.y]
             ==
+    ==
+    ::
+      %check-dead-drop
+    =/  server  (snag 0 servers)
+    =/  key  (generate-key bowl)
+    =/  dead-drop  (sham [0 key])
+    :_  state
+    :~
+      :*  %pass  /vuvuzela-wire  %agent
+          [server %vuvuzela-server]
+          %poke  %noun
+          !>([%check-dead-drop dead-drop])
+      ==
     ==
     ::
       %show-chat

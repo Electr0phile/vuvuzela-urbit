@@ -6,3 +6,15 @@ Relevant particularities of Urbit in relation to Vuvuzela:
   where all but one servers are compromized. Thus
   we still have to perform onion encryption.
 
+Important points:
+- Each round you cand send one message and receive
+  one message.
+
+Plan:
+0. Ships can exchange end-to-end encrypted messages
+through one server.
+1. Dead drop logic with just one server.
+2. Round logic with just one server.
+3. Chain of servers (no permutations).
+4. Permutations.
+5. Noise messages.

@@ -1,12 +1,23 @@
 /-  vuvuzela
 /+  default-agent, dbug
 |%
++$  versioned-state
+    $%  state-zero
+    ==
+::
++$  state-zero
+    $:  [%0 drops=(map dead-drop encrypted-message)]
+    ==
+::
++$  dead-drop  @uvH
++$  encrypted-message  @
+::
 +$  card  card:agent:gall
 ::
 ++  servers  (limo ~[~nus ~wes ~zod])
 --
 %-  agent:dbug
-=|  state=~
+=|  state=versioned-state
 ^-  agent:gall
 =<
 |_  =bowl:gall
@@ -15,7 +26,7 @@
 ++  on-init
   ^-  (quip card _this)
   ~&  >  '%vuvuzela-server initialized successfully'
-  =.  state  ~
+  =.  state  [%0 ~]
   `this
 ::
 ++  on-save
@@ -26,7 +37,7 @@
   |=  old-state=vase
   ^-  (quip card _this)
   ~&  >  '%vuvuzela-server recompiled successfully'
-  `this(state ~)
+  `this(state [%0 ~])
 ::
 ++  on-poke
   |=  [=mark =vase]
@@ -35,9 +46,13 @@
       %noun
     =/  payload  q.vase
     ?+    payload  (on-poke:def mark vase)
-        [%forward-message @ @]
+        [%leave-dead-drop @ @]
       =^  cards  state
-      (handle-forward-message +.payload bowl)
+      (handle-leave-dead-drop +.payload)
+      [cards this]
+        [%check-dead-drop @]
+      =^  cards  state
+      (handle-check-dead-drop +.payload src.bowl)
       [cards this]
     ==
   ==
@@ -54,15 +69,24 @@
 ++  on-fail   on-fail:def
 --
 |%
-++  handle-forward-message
-  |=  [[blob=@ recipient=@p] =bowl:gall]
-  ~&  >>  "forwarding message from {<src.bowl>} to {<recipient>}"
+++  handle-leave-dead-drop
+  |=  [encrypted-message=@ dead-drop=@]
+  ~&  >>  "received dead drop {<dead-drop>}"
   ^-  (quip card _state)
+  `state(drops (~(put by drops.state) dead-drop encrypted-message))
+++  handle-check-dead-drop
+  |=  [dead-drop=@ src=@p]
+  ^-  (quip card _state)
+  ~&  >>>  "requested dead drop {<dead-drop>} by {<src>}"
+  =/  encrypted-message  (~(get by drops.state) dead-drop)
+  ?~  encrypted-message
+    `state
   :_  state
   :~
     :*  %pass  /vuvuzela-wire  %agent
-        [recipient %vuvuzela-client]
-        %poke  %noun  !>([%receive-message blob src.bowl])
+        [src %vuvuzela-client]
+        %poke  %noun
+        !>([%receive-message +.encrypted-message])
     ==
   ==
 --
