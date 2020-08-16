@@ -1,0 +1,8 @@
+Relevant particularities of Urbit in relation to Vuvuzela:
+- Every user knows every other user's public key
+  by default. Thus we don't need to set up PKI.
+- All networking packets are end-to-end encrypted.
+  However, our threat models include situations
+  where all but one servers are compromized. Thus
+  we still have to perform onion encryption.
+

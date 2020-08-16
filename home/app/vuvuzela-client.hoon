@@ -12,7 +12,7 @@
 ::
 +$  card  card:agent:gall
 ::
-++  server  ~nus
+++  servers  (limo ~[~nus ~wes ~zod])
 --
 %-  agent:dbug
 =|  state=versioned-state
@@ -88,6 +88,7 @@
   ^-  (quip card _state)
   ?-    -.action
       %send-message
+    =/  server  (snag 0 servers)
     ~&  >>  "sending message {<text.action>} to {<ship.action>} through {<server>}"
     =/  key  (generate-key bowl)
     :-  :~

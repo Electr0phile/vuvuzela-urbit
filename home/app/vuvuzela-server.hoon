@@ -2,6 +2,8 @@
 /+  default-agent, dbug
 |%
 +$  card  card:agent:gall
+::
+++  servers  (limo ~[~nus ~wes ~zod])
 --
 %-  agent:dbug
 =|  state=~
