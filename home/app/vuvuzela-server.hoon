@@ -6,7 +6,7 @@
     ==
 ::
 +$  state-zero
-    $:  [%0 drops=(map dead-drop encrypted-message)]
+    $:  [%0 drops=(map dead-drop encrypted-message) round=@]
     ==
 ::
 +$  dead-drop  @uvH
@@ -26,7 +26,7 @@
 ++  on-init
   ^-  (quip card _this)
   ~&  >  '%vuvuzela-server initialized successfully'
-  =.  state  [%0 ~]
+  =.  state  [%0 ~ 0]
   `this
 ::
 ++  on-save
@@ -37,7 +37,7 @@
   |=  old-state=vase
   ^-  (quip card _this)
   ~&  >  '%vuvuzela-server recompiled successfully'
-  `this(state [%0 ~])
+  `this(state [%0 ~ 0])
 ::
 ++  on-poke
   |=  [=mark =vase]
@@ -54,10 +54,20 @@
       =^  cards  state
       (handle-check-dead-drop +.payload src.bowl)
       [cards this]
+        %start-new-round
+      :_  this(state state(round +(round.state)))
+      ~[[%give %fact ~[/vuvuzela/rounds] %atom !>(+(round.state))]]
     ==
   ==
 ::
-++  on-watch  on-watch:def
+++  on-watch
+  |=  =path
+  ^-  (quip card _this)
+  ?+    path  (on-watch:def path)
+      [%vuvuzela %rounds ~]
+    ~&  >  "got subscription from {<src.bowl>}"
+    `this
+  ==
 ++  on-leave  on-leave:def
 ++  on-peek   on-peek:def
 ++  on-agent
@@ -83,7 +93,7 @@
     `state
   :_  state
   :~
-    :*  %pass  /vuvuzela-wire  %agent
+    :*  %pass  /vuvuzela  %agent
         [src %vuvuzela-client]
         %poke  %noun
         !>([%receive-message +.message])

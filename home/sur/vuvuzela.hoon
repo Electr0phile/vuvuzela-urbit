@@ -7,5 +7,6 @@
   $%  [%leave-dead-drop text=@t ship=@p]
       [%check-dead-drop ship=@p]
       [%show-chat ship=@p]
+      [%subscribe ~]
   ==
 --

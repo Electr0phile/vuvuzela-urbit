@@ -7,7 +7,7 @@
     ==
 ::
 +$  state-zero
-    $:  [%0 =chat:vuvuzela]
+    $:  [%0 =chat:vuvuzela round-partner=(unit @p) round=@]
     ==
 ::
 +$  card  card:agent:gall
@@ -25,7 +25,7 @@
 ++  on-init
   ^-  (quip card _this)
   ~&  >  '%vuvuzela-client initialized successfully'
-  =.  state  [%0 ~]
+  =.  state  [%0 ~ ~ 0]
   `this
 ::
 ++  on-save
@@ -36,7 +36,7 @@
   |=  old-state=vase
   ^-  (quip card _this)
   ~&  >  '%vuvuzela-client recompiled successfully, cleaning history...'
-  `this(state [%0 ~])
+  `this(state [%0 ~ ~ 0])
 ::
 ++  on-poke
   |=  [=mark =vase]
@@ -51,7 +51,7 @@
       [cards this]
         [%receive-message @]
       =^  cards  state
-      (handle-receive-message +.payload bowl)
+      (handle-receive-message +.payload our.bowl now.bowl)
       [cards this]
     ==
   ==
@@ -62,38 +62,66 @@
 ++  on-agent
   |=  [=wire =sign:agent:gall]
   ^-  (quip card _this)
-  ~&  >  "package received by {<src.bowl>}"
-  `this
+  ?+    wire  (on-agent:def wire sign)
+      [%vuvuzela %message ~]
+    ~&  >  "package received by {<src.bowl>}"
+    `this
+      [%vuvuzela %rounds @ ~]
+    ?+    -.sign  (on-agent:def wire sign)
+        %fact
+      ~&  >  "round {<+.q.cage.sign>} starts"
+      `this(state state(round !<(@ q.cage.sign), round-partner ~))
+    ==
+  ==
 ++  on-arvo   on-arvo:def
 ++  on-fail   on-fail:def
 --
 |%
 ++  handle-receive-message
-  |=  [message=@ =bowl:gall]
+  |=  [message=@ our=@p now=@da]
   ^-  (quip card _state)
-  =/  key  (generate-key our.bowl ?:(=(our.bowl ~bud) ~nec ~bud))
+  =/  key  (generate-key our ?:(=(our ~bud) ~nec ~bud))
   =/  decrypted  (de:crub:crypto key message)
   ?~  decrypted  ~&(>>> "failed to decrypt" `state)
   =/  text=@t  +.decrypted
-  ~&  >>  "received message {<text>} through {<src.bowl>}"
-  `state
+  ?~  round-partner.state
+    ~&  >>>  "mistakenly received message"
+    `state
+  ~&  >>  "received message {<text>}"
+  :-  ~
+  %=  state
+    round-partner  ~
+    chat  %:  update-chat
+            chat.state
+            +.round-partner.state
+            [now text %.y]
+          ==
+  ==
 ++  handle-action
   |=  [=action:vuvuzela our=@p now=@da]
   ^-  (quip card _state)
   ?-    -.action
+    ::
+      %subscribe
+    :_  state
+    :~
+      :*  %pass  /vuvuzela/rounds/(scot %p our)  %agent
+          [entry-server %vuvuzela-server]
+          [%watch /vuvuzela/rounds]
+      ==
+    ==
     ::
       %show-chat
     ~&  >>>  :-(ship.action (~(get by chat.state) ship.action))
     `state
     ::
       %check-dead-drop
-    =/  server  (snag 0 servers)
-    =/  key  (generate-key our ?:(=(our ~bud) ~nec ~bud))
-    =/  dead-drop  (sham [0 key])
-    :_  state
+    =/  key  (generate-key our ship.action)
+    =/  dead-drop  (sham [round.state key])
+    :_  state(round-partner (some ship.action))
     :~
-      :*  %pass  /vuvuzela-wire  %agent
-          [server %vuvuzela-server]
+      :*  %pass  /vuvuzela  %agent
+          [entry-server %vuvuzela-server]
           %poke  %noun
           !>([%check-dead-drop dead-drop])
       ==
@@ -102,12 +130,12 @@
       %leave-dead-drop
     =/  key  (generate-key our ?:(=(our ~bud) ~nec ~bud))
     =/  message  (en:crub:crypto key text.action)
-    =/  dead-drop  (sham [0 key])
+    =/  dead-drop  (sham [round.state key])
     ~&  >>  "sending message {<text.action>} to"
     ~&  >>  "{<ship.action>} through {<entry-server>}"
     ~&  >>  "dead drop: {<dead-drop>}"
     :-  :~
-          :*  %pass  /vuvuzela-wire  %agent
+          :*  %pass  /vuvuzela  %agent
               [entry-server %vuvuzela-server]
               %poke  %noun
               !>([%leave-dead-drop message dead-drop])
