@@ -19,7 +19,9 @@ through one server.~~
 4. Permutations.
 5. Noise messages.
 6. Make packets same size.
+
 ...
+
 X. Make graphical interface on React.
 
 ~raltem-lartem
