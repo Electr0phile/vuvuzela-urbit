@@ -4,6 +4,7 @@
 This is my first attempt in programming on Urbit, so for now it is kind of a mess :)
 
 Plan:
+
 0. ~~Ships can exchange end-to-end encrypted messages
 through one server.~~
 1. ~~Dead drop logic with just one server.~~
