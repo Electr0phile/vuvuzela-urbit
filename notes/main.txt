@@ -5,20 +5,16 @@ Relevant particularities of Urbit in relation to Vuvuzela:
   However, our threat models include situations
   where all but one servers are compromized. Thus
   we still have to perform onion encryption.
-- states are versioned, no information is ever lost,
-  everything stays in history. Bad for correlation
-  attacks?
+- States are versioned, no information is ever lost,
+  everything stays in history. Bad for long-term
+  correlation surveillance?
+- All messages on one wire are always received in
+  the same order they were sent. We can use that to
+  increase the number of simultaneous conversations.
 
 Important points:
-- Each round you cand send one message and receive
-  one message.
+- For now, each round you cand send one message and
+  receive one message.
 
 Current implementation specifics:
-- Checking for empty dead drop yields no response
-  from the server.
-- Server can switch between manual and automatic
-  round rotation. This is only temporary, an actual
-  server in the future will be unable to stop round
-  rotation.
-
-
+- 

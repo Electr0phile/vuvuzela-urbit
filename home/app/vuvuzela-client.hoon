@@ -10,12 +10,20 @@
     ==
 ::
 +$  card  card:agent:gall
++$  symkey  @uwsymmetrickey
++$  pubkey  @uwpublickey
+::
++$  encrypted-text  @
++$  dead-drop  @
++$  exchange-request   [%exchange-request =dead-drop =encrypted-text]
++$  exchange-response  [%exchange-response =encrypted-text]
++$  forward-onion  [pubkey @]
++$  backward-onion  @
 ::
 +$  message  [date=@da text=@t my=?(%.y %.n)]
 +$  chat  (map ship=@p (list message))
 ::
-++  servers  (limo ~[~nus ~wes ~zod])
-++  entry-server  (snag 0 servers)
+++  entry-server  ~nus
 --
 %-  agent:dbug
 =|  state=versioned-state
@@ -46,18 +54,17 @@
   ?+    mark  (on-poke:def mark vase)
       %noun
     ?+    q.vase  (on-poke:def mark vase)
-        [%check-dead-drop @]
+        ::
+        [%request @ @]
       =^  cards  state
-      (check-dead-drop `@p`+.q.vase our.bowl now.bowl)
+      (handle-exchange-request +<.q.vase +>.q.vase our.bowl now.bowl)
       [cards this]
-        [%leave-dead-drop @ @]
+        ::
+        [%encrypted-text @]
       =^  cards  state
-      (leave-dead-drop +<.q.vase +>.q.vase our.bowl now.bowl)
+      (handle-encrypted-text +.q.vase our.bowl now.bowl)
       [cards this]
-        [%receive-message @]
-      =^  cards  state
-      (receive-message +.q.vase our.bowl now.bowl)
-      [cards this]
+        ::
         %subscribe
       :_  this
       :~
@@ -66,6 +73,7 @@
             [%watch /vuvuzela/rounds]
         ==
       ==
+        ::
         [%show-chat @]
       =/  ship  `@p`+.q.vase
       ~&  >>>  :-(ship (~(get by chat.state) ship))
@@ -73,15 +81,12 @@
     ==
   ==
 ::
-++  on-watch  on-watch:def
-++  on-leave  on-leave:def
-++  on-peek   on-peek:def
 ++  on-agent
   |=  [=wire =sign:agent:gall]
   ^-  (quip card _this)
   ?+    wire  (on-agent:def wire sign)
       [%vuvuzela %message ~]
-    ~&  >  "package received by {<src.bowl>}"
+    ~&  >  "forward-onion received by {<src.bowl>}"
     `this
       [%vuvuzela %rounds @ ~]
     ?+    -.sign  (on-agent:def wire sign)
@@ -90,17 +95,20 @@
       `this(state state(round !<(@ q.cage.sign), round-partner ~))
     ==
   ==
+++  on-watch  on-watch:def
+++  on-leave  on-leave:def
+++  on-peek   on-peek:def
 ++  on-arvo   on-arvo:def
 ++  on-fail   on-fail:def
 --
 |%
-++  receive-message
-  |=  [message=@ our=@p now=@da]
+++  handle-encrypted-text
+  |=  [=encrypted-text our=@p now=@da]
   ^-  (quip card _state)
-  =/  key  (generate-key our ?:(=(our ~bud) ~nec ~bud))
-  =/  decrypted  (de:crub:crypto key message)
-  ?~  decrypted  ~&(>>> "failed to decrypt" `state)
-  =/  text=@t  +.decrypted
+  =/  key  -:(generate-keys our ?:(=(our ~bud) ~nec ~bud))
+  =/  dec=(unit @t)  (de:crub:crypto key encrypted-text)
+  ?~  dec  ~&(>>> "failed to decrypt" `state)
+  =/  text=@t  u.dec
   ?~  round-partner.state
     ~&  >>>  "mistakenly received message"
     `state
@@ -114,31 +122,26 @@
             [now text %.n]
           ==
   ==
-++  check-dead-drop
-  |=  [ship=@p our=@p now=@da]
-  =/  key  (generate-key our ship)
-  =/  dead-drop  (sham [round.state key])
-  :_  state(round-partner (some ship))
-  :~
-    :*  %pass  /vuvuzela  %agent
-        [entry-server %vuvuzela-server]
-        %poke  %noun
-        !>([%check-dead-drop dead-drop])
-    ==
-  ==
-++  leave-dead-drop
+::
+++  handle-exchange-request
   |=  [text=@t ship=@p our=@p now=@da]
-  =/  key  (generate-key our ?:(=(our ~bud) ~nec ~bud))
-  =/  message  (en:crub:crypto key text)
-  =/  dead-drop  (sham [round.state key])
+  =/  sym=symkey  -:(generate-keys our ?:(=(our ~bud) ~nec ~bud))
+  =/  =dead-drop  (sham [round.state sym])
   ~&  >>  "sending message {<text>} to"
   ~&  >>  "{<ship>} through {<entry-server>}"
-  ~&  >>  "dead drop: {<dead-drop>}"
+  ~&  >>  "dead-drop: {<dead-drop>}"
+  =/  =encrypted-text  (en:crub:crypto sym text)
+  =/  [sym=symkey pub=pubkey]  (generate-keys our ~zod)
+  =/  =exchange-request  [%exchange-request dead-drop encrypted-text]
+  =/  forward-onion-1=forward-onion
+    [pub (en:crub:crypto sym (jam exchange-request))]
+  =/  [sym=symkey pub=pubkey]  (generate-keys our ~nus)
+  =/  forward-onion-2=forward-onion
+    [pub (en:crub:crypto sym (jam forward-onion-1))]
   :-  :~
         :*  %pass  /vuvuzela  %agent
-            [entry-server %vuvuzela-server]
-            %poke  %noun
-            !>([%leave-dead-drop message dead-drop])
+            [entry-server %vuvuzela-entry-server]
+            %poke  %noun  !>([%forward-onion forward-onion-2])
         ==
       ==
   %=  state
@@ -156,16 +159,17 @@
     (~(put by chat) ship updated-messages)
   ::  Create fake keys for testing fake ships
   ::
-  ++  generate-key
+  ++  generate-keys
     |=  [our=@p their=@p]
-    ^-  @uwsymmetrickey
+    ^-  [symkey pubkey]
     =/  vane  (ames !>(..zuse))
     =/  our-vane  vane
     =/  their-vane  vane
     =.  crypto-core.ames-state.our-vane  (pit:nu:crub:crypto 512 (shaz our))
     =/  our-sec  sec:ex:crypto-core.ames-state.our-vane
+    =/  our-pub  pub:ex:crypto-core.ames-state.our-vane
     =.  crypto-core.ames-state.their-vane  (pit:nu:crub:crypto 512 (shaz their))
     =/  their-pub  pub:ex:crypto-core.ames-state.their-vane
     =/  sym  (derive-symmetric-key:vane their-pub our-sec)
-    sym
+    [sym our-pub]
 --
