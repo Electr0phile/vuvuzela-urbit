@@ -17,7 +17,7 @@
 +$  dead-drop  @
 +$  exchange-request   [%exchange-request =dead-drop =encrypted-text]
 +$  exchange-response  [%exchange-response =encrypted-text]
-+$  forward-onion  [pubkey @]
++$  forward-onion  [pubkey encrypted-payload=@]
 +$  backward-onion  @
 ::
 +$  message  [date=@da text=@t my=?(%.y %.n)]
@@ -64,12 +64,12 @@
       =^  cards  state
       (handle-encrypted-text +.q.vase our.bowl now.bowl)
       [cards this]
-        ::
+        :::
         %subscribe
       :_  this
       :~
         :*  %pass  /vuvuzela/rounds/(scot %p our.bowl)  %agent
-            [entry-server %vuvuzela-server]
+            [entry-server %vuvuzela-entry-server]
             [%watch /vuvuzela/rounds]
         ==
       ==
@@ -139,7 +139,7 @@
   =/  forward-onion-2=forward-onion
     [pub (en:crub:crypto sym (jam forward-onion-1))]
   :-  :~
-        :*  %pass  /vuvuzela  %agent
+        :*  %pass  /vuvuzela/chain  %agent
             [entry-server %vuvuzela-entry-server]
             %poke  %noun  !>([%forward-onion forward-onion-2])
         ==

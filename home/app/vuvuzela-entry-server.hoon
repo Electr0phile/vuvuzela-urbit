@@ -8,16 +8,20 @@
 ::  - restore original permutation and decrypt backprop-onions
 ::
 /+  default-agent, dbug
+/=  ames  /sys/vane/ames
 |%
 +$  versioned-state
     $%  state-zero
     ==
 ::
 +$  state-zero
-    $:  [%0 round=@ basket=(list @) hens=(list @p)]
+    $:  [%0 round=@ forward-list=(list forward-onion) clients=(list @p)]
     ==
 ::
 +$  card  card:agent:gall
++$  symkey  @uwsymmetrickey
++$  pubkey  @uwpublickey
++$  forward-onion  [pub=pubkey encrypted-payload=@]
 ::
 ++  next-server  ~zod
 --
@@ -50,18 +54,22 @@
   ?+    mark  (on-poke:def mark vase)
       %noun
     ?+    q.vase  (on-poke:def mark vase)
+        ::
         %announce-round
-      :_  this(state state(round +(round.state), basket ~))
+      ~&  >  "announcing round {<+(round.state)>}"
+      :_  this(state state(round +(round.state), forward-list ~, clients ~))
       [%give %fact ~[/vuvuzela/rounds] %atom !>(+(round.state))]~
-      ::
-        [%egg @]
-      ~&  >  "new egg in the basket"
-      ::  TODO: add permutations
-      `this(state state(basket (snoc basket.state (peel +.q.vase)), hens (snoc hens.state src.bowl)))
-      ::
-        %throw-basket
+        ::
+        [%forward-onion @ @]
+      ~&  >  "forwarding onion"
+      ::  TODO:
+      ::  - permutations
+      ::  - onion decryption
+      `this(state state(forward-list (snoc forward-list.state (decrypt-onion +.q.vase our.bowl)), clients (snoc clients.state src.bowl)))
+        ::
+        %pass-forward-list
       :_  this
-      [%pass /vuvuzela/chain/throw %agent [next-server %vuvuzela-server-end] %poke %noun !>([%basket basket.state])]~
+      [%pass /vuvuzela/chain/forward %agent [next-server %vuvuzela-end-server] %poke %noun !>([%forward-list forward-list.state])]~
     ==
   ==
 ::
@@ -73,18 +81,25 @@
     ~&  >  "got subscription from {<src.bowl>}"
     `this
   ==
-++  on-leave  on-leave:def
-++  on-peek   on-peek:def
 ++  on-agent
   |=  [=wire =sign:agent:gall]
   ^-  (quip card _this)
   ~&  >>>  "on-agent received"
   `this
+++  on-leave  on-leave:def
+++  on-peek   on-peek:def
 ++  on-arvo   on-arvo:def
 ++  on-fail   on-fail:def
 --
 |%
-  ++  peel
-    |=  [egg=@]
-    egg
+  ++  decrypt-onion
+    |=  [input-onion=forward-onion our=@p]
+    =/  vane  (ames !>(..zuse))
+    =.  crypto-core.ames-state.vane  (pit:nu:crub:crypto 512 (shaz our))
+    =/  our-sec  sec:ex:crypto-core.ames-state.vane
+    =/  sym  (derive-symmetric-key:vane pub.input-onion our-sec)
+    =/  dec=(unit @)  (de:crub:crypto sym encrypted-payload.input-onion)
+    ?~  dec
+      !!
+    (forward-onion (cue u.dec))
 --
