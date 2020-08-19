@@ -14,11 +14,14 @@ through one server.~~
         * Reevaluate style, reformat to conventions.
     2. Middle-server logic.
 4. Permutations.
-5. Noise messages.
-6. Make packets same size.
+5. Timed rounds using Behn.
+6. Actual encryption logic, not dummy.
+7. Noise messages.
+8. Make packets same size.
 
 ...
 
 X. Make graphical interface on React.
+XX. Think through high-level chain formation logic (e. g. change server list, handle unreliable servers).
 
 ~raltem-lartem
