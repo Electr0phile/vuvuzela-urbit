@@ -9,7 +9,7 @@ Plan:
 through one server.~~
 1. ~~Dead drop logic with just one server.~~
 2. ~~Round logic with just one server.~~
-3. Chain of servers (no permutations).
+3. ~~Chain of servers (no permutations).~~
     1. ~~End-server logic.~~
         * Reevaluate style, reformat to conventions.
     2. Middle-server logic.
