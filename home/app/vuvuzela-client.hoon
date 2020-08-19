@@ -116,9 +116,7 @@
     ~&  >>>  "error decrypting ~nec layer"  `state
   ~&  >  "first layer passed..."
   =/  key  -:(generate-keys our ~zod)
-  ~&  >  "decrypting {<u.dec>} with {<key>}..."
   =/  decc  (de:crub:crypto key u.dec)
-  ~&  >  "---{<decc>}---"
   =/  dec=(unit @t)  decc
   ~&  >  "decrypted!!!"
   ?~  dec
