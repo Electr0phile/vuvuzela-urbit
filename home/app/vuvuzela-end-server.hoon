@@ -93,24 +93,34 @@
 |%
   ++  handle-forward-list
     |=  [forward-list=(list forward-onion) our=@p]
-    =/  [* backward-list=(list backward-onion) drop-map=(map @ @)]
-      (spin forward-list [(reap (lent forward-list) 1.337) ~] ~(do handle-forward-onion our))
+    ^-  (quip card _state)
+    =/  [* backward-list=(list backward-onion) drop-map=(map @ [@ @]) @]
+      (spin forward-list [(reap (lent forward-list) 1.337) `(map dead-drop [@ encrypted-text])`~ 0] ~(do handle-forward-onion our forward-list))
     ~&  >>  drop-map
     ~&  >>>  backward-list
-    `state
+    :_  state
+    [%pass /vuvuzela/chain/backward %agent [prev-server %vuvuzela-entry-server] %poke %noun !>([%backward-list backward-list])]~
+  ::
   ++  handle-forward-onion
-    |_  [our=@p]
+    |_  [our=@p forward-list=(list forward-onion)]
     ++  do
-      |=  [=forward-onion backward-list=(list backward-onion) drop-map=(map dead-drop encrypted-text)]
+      |=  [=forward-onion backward-list=(list backward-onion) drop-map=(map dead-drop [@ encrypted-text]) count=@]
       =/  =exchange-request
         (decrypt-exchange-request forward-onion our)
       =/  maybe-match  (~(get by drop-map) dead-drop.exchange-request)
       ?~  maybe-match
-        [~ backward-list (~(put by drop-map) dead-drop.exchange-request encrypted-text.exchange-request)]
+        [~ backward-list (~(put by drop-map) dead-drop.exchange-request [count encrypted-text.exchange-request]) +(count)]
       ~&  >  "found match!"
-      =/  client-pub=pubkey  -.forward-onion
-      =/  reply  (encrypt-reply-text u.maybe-match our client-pub)
-      [~ (snoc backward-list reply) (~(del by drop-map) dead-drop.exchange-request)]
+      =/  index  -.u.maybe-match
+      =/  client1-pub=pubkey  pub:(snag index forward-list)
+      =/  client2-pub=pubkey  -.forward-onion
+      =/  reply-to-client1
+        (encrypt-reply-text encrypted-text.exchange-request our client1-pub)
+      =/  reply-to-client2
+        (encrypt-reply-text +.u.maybe-match our client2-pub)
+      =/  updated-backward-list
+        (snap (snap backward-list count reply-to-client2) index reply-to-client1)
+      [~ updated-backward-list (~(del by drop-map) dead-drop.exchange-request) +(count)]
     --
   ::
   ++  encrypt-reply-text

@@ -15,13 +15,14 @@
     ==
 ::
 +$  state-zero
-    $:  [%0 round=@ forward-list=(list forward-onion) clients=(list @p)]
+    $:  [%0 round=@ forward-list=(list forward-onion) clients=(list [@p symkey])]
     ==
 ::
 +$  card  card:agent:gall
 +$  symkey  @uwsymmetrickey
 +$  pubkey  @uwpublickey
 +$  forward-onion  [pub=pubkey encrypted-payload=@]
++$  backward-onion  @
 ::
 ++  next-server  ~zod
 --
@@ -65,11 +66,30 @@
       ::  TODO:
       ::  - permutations
       ::  - onion decryption
-      `this(state state(forward-list (snoc forward-list.state (decrypt-onion +.q.vase our.bowl)), clients (snoc clients.state src.bowl)))
+      =/  [=forward-onion sym=symkey]  (decrypt-onion +.q.vase our.bowl)
+      `this(state state(forward-list (snoc forward-list.state forward-onion), clients (snoc clients.state [src.bowl sym])))
         ::
         %pass-forward-list
       :_  this
       [%pass /vuvuzela/chain/forward %agent [next-server %vuvuzela-end-server] %poke %noun !>([%forward-list forward-list.state])]~
+        ::
+        [%backward-list *]
+      ~&  >  "received backward list"
+      =/  backward-list  ((list backward-onion) +.q.vase)
+      =/  clients  clients.state
+      ?.  =((lent backward-list) (lent clients))
+        ~&  >>>  "sent and received lists are not same size"
+        `this
+      =/  cards=(list card)  ~
+      |-
+      ?~  clients
+        [cards this]
+      ?~  backward-list
+        [cards this]
+      =/  sym  +.i.clients
+      =/  client  -.i.clients
+      =/  onion  i.backward-list
+      $(cards (snoc cards [%pass /vuvuzela/chain/backward %agent [client %vuvuzela-client] %poke %noun !>([%backward-onion (en:crub:crypto sym onion)])]), clients t.clients, backward-list t.backward-list)
     ==
   ==
 ::
@@ -94,6 +114,7 @@
 |%
   ++  decrypt-onion
     |=  [input-onion=forward-onion our=@p]
+    ^-  [forward-onion symkey]
     =/  vane  (ames !>(..zuse))
     =.  crypto-core.ames-state.vane  (pit:nu:crub:crypto 512 (shaz our))
     =/  our-sec  sec:ex:crypto-core.ames-state.vane
@@ -101,5 +122,5 @@
     =/  dec=(unit @)  (de:crub:crypto sym encrypted-payload.input-onion)
     ?~  dec
       !!
-    (forward-onion (cue u.dec))
+    [(forward-onion (cue u.dec)) sym]
 --

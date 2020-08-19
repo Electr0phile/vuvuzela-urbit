@@ -9,13 +9,10 @@ Plan:
 through one server.~~
 1. ~~Dead drop logic with just one server.~~
 2. ~~Round logic with just one server.~~
-    1. ~~Manual round logic.~~
-    2. ~~Timed round logic using behn.~~
-    3. Gathering of incoming requests in the
-     beginning of round, then simultaneous processing.
-    4. Client-side logic for resending unread
-  messages.
 3. Chain of servers (no permutations).
+    1. ~~End-server logic.~~
+        * Reevaluate style, reformat to conventions.
+    2. Middle-server logic.
 4. Permutations.
 5. Noise messages.
 6. Make packets same size.

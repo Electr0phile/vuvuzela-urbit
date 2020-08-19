@@ -15,6 +15,3 @@ Relevant particularities of Urbit in relation to Vuvuzela:
 Important points:
 - For now, each round you cand send one message and
   receive one message.
-
-Current implementation specifics:
-- 

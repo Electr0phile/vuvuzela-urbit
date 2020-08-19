@@ -51,6 +51,7 @@
 ++  on-poke
   |=  [=mark =vase]
   ^-  (quip card _this)
+  ~&  >  "poke received"
   ?+    mark  (on-poke:def mark vase)
       %noun
     ?+    q.vase  (on-poke:def mark vase)
@@ -60,11 +61,11 @@
       (handle-exchange-request +<.q.vase +>.q.vase our.bowl now.bowl)
       [cards this]
         ::
-        [%encrypted-text @]
+        [%backward-onion @]
       =^  cards  state
-      (handle-encrypted-text +.q.vase our.bowl now.bowl)
+      (handle-backward-onion +.q.vase our.bowl now.bowl)
       [cards this]
-        :::
+        ::
         %subscribe
       :_  this
       :~
@@ -102,16 +103,32 @@
 ++  on-fail   on-fail:def
 --
 |%
-++  handle-encrypted-text
+++  handle-backward-onion
   |=  [=encrypted-text our=@p now=@da]
   ^-  (quip card _state)
-  =/  key  -:(generate-keys our ?:(=(our ~bud) ~nec ~bud))
-  =/  dec=(unit @t)  (de:crub:crypto key encrypted-text)
-  ?~  dec  ~&(>>> "failed to decrypt" `state)
-  =/  text=@t  u.dec
+  ~&  >  "handling backward onion..."
   ?~  round-partner.state
-    ~&  >>>  "mistakenly received message"
-    `state
+    ~&  >>>  "mistakenly received message"  `state
+  ~&  >  "partner test passed..."
+  =/  key  -:(generate-keys our ~nus)
+  =/  dec=(unit @t)  (de:crub:crypto key encrypted-text)
+  ?~  dec
+    ~&  >>>  "error decrypting ~nec layer"  `state
+  ~&  >  "first layer passed..."
+  =/  key  -:(generate-keys our ~zod)
+  ~&  >  "decrypting {<u.dec>} with {<key>}..."
+  =/  decc  (de:crub:crypto key u.dec)
+  ~&  >  "---{<decc>}---"
+  =/  dec=(unit @t)  decc
+  ~&  >  "decrypted!!!"
+  ?~  dec
+    ~&  >>>  "error decrypting ~zod layer"  `state
+  ~&  >  "second layer passed..."
+  =/  key  -:(generate-keys our ?:(=(our ~bud) ~nec ~bud))
+  =/  dec=(unit @t)  (de:crub:crypto key u.dec)
+  ?~  dec
+    ~&  >>>  "error decrypting partner layer"  `state
+  =/  text=@t  u.dec
   ~&  >>  "received message {<text>}"
   :-  ~
   %=  state
@@ -150,6 +167,7 @@
             ship
             [now text %.y]
           ==
+    round-partner  (some ship)
   ==
   ::
   ++  update-chat

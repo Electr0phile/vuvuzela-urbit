@@ -8,10 +8,12 @@
     $:  [%0 drops=(map dead-drop message) round=@ wake-time=@da manual-rounds=? requests=(list request)]
     ==
 ::
++$  leave-request  [%leave-dead-drop =message =dead-drop]
++$  check-request  [%check-dead-drop =dead-drop]
 +$  request
     $%
-      [%leave-dead-drop =message =dead-drop]
-      [%check-dead-drop =dead-drop]
+      leave-request
+      check-request
     ==
 +$  dead-drop  @uvH
 +$  message  @
@@ -97,8 +99,6 @@
     ~&  >  "got subscription from {<src.bowl>}"
     `this
   ==
-++  on-leave  on-leave:def
-++  on-peek   on-peek:def
 ++  on-agent
   |=  [=wire =sign:agent:gall]
   ^-  (quip card _this)
@@ -116,31 +116,41 @@
         [%pass /vuvuzela/timer %arvo %b %wait wake-time]
     ==
   ==
+++  on-leave  on-leave:def
+++  on-peek   on-peek:def
 ++  on-fail   on-fail:def
 --
 |%
 ++  process-requests
   |=  [requests=(list request)]
-  ~&  >>  requests
-  `state
+  ^-  (quip card _state)
+  =/  leave-requests
+    (murn requests |=(a=request ^-((unit request) ?:(=(-.a %leave-dead-drop) [~ a] ~))))
+  =/  check-requests
+    (murn requests |=(a=request ^-((unit request) ?:(=(-.a %check-dead-drop) [~ a] ~))))
+  =/  new-drops  +:(spin ((list leave-request) leave-requests) drops.state leave-dead-drop)
+  =/  unit-cards=(list (unit))  -:(spin ((list check-request) check-requests) ~nus check-dead-drop)
+  =/  cards=(list card)  (murn unit-cards |=(a=(unit card) a))
+  [cards state(drops new-drops)]
 ++  leave-dead-drop
-  |=  [message=@ dead-drop=@]
+  |=  [[@tas =message =dead-drop] drops=(map dead-drop message)]
   ~&  >>  "received dead drop {<dead-drop>}"
-  ^-  (quip card _state)
-  `state(drops (~(put by drops.state) dead-drop message))
+  ^-  [~ _drops]
+  [~ (~(put by drops) dead-drop message)]
 ++  check-dead-drop
-  |=  [dead-drop=@ src=@p]
-  ^-  (quip card _state)
+  |=  [=check-request src=@p]
+  =/  dead-drop  dead-drop.check-request
+  ^-  [(unit card) _src]
   ~&  >>>  "requested dead drop {<dead-drop>} by {<src>}"
   =/  message  (~(get by drops.state) dead-drop)
   ?~  message
-    `state
-  :_  state
-  :~
+    [~ src]
+  :-
+    :-  ~
     :*  %pass  /vuvuzela  %agent
         [src %vuvuzela-client]
         %poke  %noun
         !>([%receive-message +.message])
     ==
-  ==
+  src
 --
