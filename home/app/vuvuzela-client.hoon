@@ -1,4 +1,4 @@
-/-  vuvuzela
+/-  *vuvuzela
 /+  default-agent, dbug
 /=  ames  /sys/vane/ames
 |%
@@ -9,14 +9,6 @@
 +$  state-zero  [%0 =chat round-partner=(unit @p) round=@]
 ::
 +$  card  card:agent:gall
-::
-+$  symkey  symkey:vuvuzela
-+$  pubkey  pubkey:vuvuzela
-+$  crypt  crypt:vuvuzela
-+$  hash  hash:vuvuzela
-+$  dead-drop  dead-drop:vuvuzela
-+$  fonion  fonion:vuvuzela
-+$  bonion  bonion:vuvuzela
 ::  Client-side messaging history.
 ::
 +$  message  [date=@da text=@t my=?(%.y %.n)]
@@ -63,7 +55,6 @@
         ::  Process response from entry-server
         ::
         [%bonion @]
-      ~&  >  "got bonion"
       =^  cards  state
       (handle-bonion +.q.vase our.bowl now.bowl)
       [cards this]
@@ -88,8 +79,8 @@
   |=  [=wire =sign:agent:gall]
   ^-  (quip card _this)
   ?+    wire  (on-agent:def wire sign)
-      [%vuvuzela %message ~]
-    ~&  >  "forward-onion received by {<src.bowl>}"
+      [%vuvuzela %chain ~]
+    ~&  >  "fonion received by {<src.bowl>}"
     `this
       [%vuvuzela %rounds @ ~]
     ?+    -.sign  (on-agent:def wire sign)
@@ -105,6 +96,41 @@
 ++  on-fail   on-fail:def
 --
 |%
+++  handle-exchange
+  |=  [text=@t ship=@p our=@p now=@da]
+  =/  sym=symkey
+    -:(generate-keys our ?:(=(our ~bud) ~nec ~bud))
+  =/  =hash  (sham [round.state sym])
+  ~&  >  "sending message {<text>} to"
+  ~&  >  "{<ship>} through {<entry-server>}"
+  ~&  >>  "dead-drop hash: {<hash>}"
+  =/  =crypt  (en:crub:crypto sym text)
+  =/  [sym=symkey pub=pubkey]  (generate-keys our ~zod)
+  =/  =dead-drop  [hash crypt]
+  =/  fonion-1=fonion
+    [pub (en:crub:crypto sym (jam dead-drop))]
+  =/  [sym=symkey pub=pubkey]  (generate-keys our ~wes)
+  =/  fonion-2=fonion
+    [pub (en:crub:crypto sym (jam fonion-1))]
+  =/  [sym=symkey pub=pubkey]  (generate-keys our ~nus)
+  =/  fonion-3=fonion
+    [pub (en:crub:crypto sym (jam fonion-2))]
+  :_
+    %=  state
+      chat  %^  update-chat
+              chat.state
+              ship
+              [now text %.y]
+      round-partner  (some ship)
+    ==
+  :~
+    :*  %pass  /vuvuzela/client
+        %agent  [entry-server %vuvuzela-entry-server]
+        %poke  %noun
+        !>([%fonion fonion-3])
+    ==
+  ==
+::
 ++  handle-bonion
   |=  [=bonion our=@p now=@da]
   ^-  (quip card _state)
@@ -115,6 +141,11 @@
   =/  dec=(unit @)  (de:crub:crypto key bonion)
   ?~  dec
     ~&  >>>  "error decrypting ~nec layer"
+    `state
+  =/  key  -:(generate-keys our ~wes)
+  =/  dec=(unit @)  (de:crub:crypto key u.dec)
+  ?~  dec
+    ~&  >>>  "error decrypting ~wes layer"
     `state
   ?:  =(1.337 u.dec)
     ~&  >>>  "partner did not receive message"
@@ -130,7 +161,7 @@
     ~&  >>>  "error decrypting partner layer"
     `state
   =/  text=@t  u.dec
-  ~&  >  "received message {<text>}"
+  ~&  >>  "received message {<text>} from {<u.round-partner.state>}"
   :-  ~
   %=  state
     round-partner  ~
@@ -140,58 +171,26 @@
             [now text %.n]
   ==
 ::
-++  handle-exchange
-  |=  [text=@t ship=@p our=@p now=@da]
-  =/  sym=symkey
-    -:(generate-keys our ?:(=(our ~bud) ~nec ~bud))
-  =/  =hash  (sham [round.state sym])
-  ~&  >  "sending message {<text>} to"
-  ~&  >  "{<ship>} through {<entry-server>}"
-  ~&  >  "dead-drop hash: {<hash>}"
-  =/  =crypt  (en:crub:crypto sym text)
-  =/  [sym=symkey pub=pubkey]  (generate-keys our ~zod)
-  =/  =dead-drop  [hash crypt]
-  =/  fonion-1=fonion
-    [pub (en:crub:crypto sym (jam dead-drop))]
-  =/  [sym=symkey pub=pubkey]  (generate-keys our ~nus)
-  =/  fonion-2=fonion
-    [pub (en:crub:crypto sym (jam fonion-1))]
-  :_
-    %=  state
-      chat  %^  update-chat
-              chat.state
-              ship
-              [now text %.y]
-      round-partner  (some ship)
-    ==
-  :~
-    :*  %pass  /vuvuzela/chain
-        %agent  [entry-server %vuvuzela-entry-server]
-        %poke  %noun
-        !>([%fonion fonion-2])
-    ==
-  ==
-  ::
-  ++  update-chat
-    |=  [=chat ship=@p =message]
-    =/  messages  (fall (~(get by chat) ship) ~)
-    =/  updated-messages  (snoc messages message)
-    (~(put by chat) ship updated-messages)
-  ::  Create fake keys for testing fake ships
-  ::
-  ++  generate-keys
-    |=  [our=@p their=@p]
-    ^-  [symkey pubkey]
-    =/  vane  (ames !>(..zuse))
-    =/  our-vane  vane
-    =/  their-vane  vane
-    =.  crypto-core.ames-state.our-vane
-      (pit:nu:crub:crypto 512 (shaz our))
-    =/  our-sec  sec:ex:crypto-core.ames-state.our-vane
-    =/  our-pub  pub:ex:crypto-core.ames-state.our-vane
-    =.  crypto-core.ames-state.their-vane
-      (pit:nu:crub:crypto 512 (shaz their))
-    =/  their-pub  pub:ex:crypto-core.ames-state.their-vane
-    =/  sym  (derive-symmetric-key:vane their-pub our-sec)
-    [sym our-pub]
+++  update-chat
+  |=  [=chat ship=@p =message]
+  =/  messages  (fall (~(get by chat) ship) ~)
+  =/  updated-messages  (snoc messages message)
+  (~(put by chat) ship updated-messages)
+::  Create fake keys for testing fake ships
+::
+++  generate-keys
+  |=  [our=@p their=@p]
+  ^-  [symkey pubkey]
+  =/  vane  (ames !>(..zuse))
+  =/  our-vane  vane
+  =/  their-vane  vane
+  =.  crypto-core.ames-state.our-vane
+    (pit:nu:crub:crypto 512 (shaz our))
+  =/  our-sec  sec:ex:crypto-core.ames-state.our-vane
+  =/  our-pub  pub:ex:crypto-core.ames-state.our-vane
+  =.  crypto-core.ames-state.their-vane
+    (pit:nu:crub:crypto 512 (shaz their))
+  =/  their-pub  pub:ex:crypto-core.ames-state.their-vane
+  =/  sym  (derive-symmetric-key:vane their-pub our-sec)
+  [sym our-pub]
 --

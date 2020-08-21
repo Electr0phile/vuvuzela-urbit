@@ -9,7 +9,7 @@
 ::  - restore original permutation and decrypt
 ::    bonions
 ::
-/-  vuvuzela
+/-  *vuvuzela
 /+  default-agent, dbug
 /=  ames  /sys/vane/ames
 |%
@@ -21,12 +21,7 @@
 ::
 +$  card  card:agent:gall
 ::
-+$  symkey  symkey:vuvuzela
-+$  pubkey  pubkey:vuvuzela
-+$  fonion  fonion:vuvuzela
-+$  bonion  bonion:vuvuzela
-::
-++  next-server  ~zod
+++  next-server  ~wes
 --
 %-  agent:dbug
 =|  state=versioned-state
@@ -60,11 +55,11 @@
         ::
         %start-round
       ~&  >  "starting round {<+(round.state)>}"
-      :-  :~
-            :*  %give  %fact  ~[/vuvuzela/rounds]
-                %atom  !>(+(round.state))
-            ==
-          ==
+      :-
+      :_  ~
+        :*  %give  %fact  ~[/vuvuzela/rounds]
+            %atom  !>(+(round.state))
+        ==
       %=  this
         state
           %=  state
@@ -82,26 +77,25 @@
       =/  [=fonion sym=symkey]
         (decrypt-fonion +.q.vase our.bowl)
       :-  ~
-        %=  this
-          state
-          %=  state
-            fonion-list
-          (snoc fonion-list.state fonion)
-            clients
-          (snoc clients.state [src.bowl sym])
-          ==
+      %=  this
+        state
+        %=  state
+          fonion-list
+        (snoc fonion-list.state fonion)
+          clients
+        (snoc clients.state [src.bowl sym])
         ==
+      ==
         ::
         %end-round
       ^-  (quip card _this)
       :_  this
-        :~
-          :*
-            %pass  /vuvuzela/chain/forward
-            %agent  [next-server %vuvuzela-end-server]
-            %poke  %noun
-            !>([%fonion-list fonion-list.state])
-          ==
+      :_  ~
+        :*
+          %pass  /vuvuzela/chain/forward
+          %agent  [next-server %vuvuzela-middle-server]
+          %poke  %noun
+          !>([%fonion-list fonion-list.state])
         ==
         ::
         [%bonion-list *]
@@ -122,17 +116,17 @@
       =/  client  -.i.clients
       =/  onion  i.bonion-list
       %=  $
+        clients  t.clients
+        bonion-list  t.bonion-list
         cards
           %+  snoc
             cards
           :*
-            %pass  /vuvuzela/chain/backward
+            %pass  /vuvuzela/client
             %agent  [client %vuvuzela-client]
             %poke  %noun
             !>([%bonion (en:crub:crypto sym onion)])
           ==
-        clients  t.clients
-        bonion-list  t.bonion-list
       ==
     ==
   ==
@@ -148,26 +142,32 @@
 ++  on-agent
   |=  [=wire =sign:agent:gall]
   ^-  (quip card _this)
-  ~&  >>>  "on-agent received"
-  `this
+  ?+    wire  (on-agent:def wire sign)
+      [%vuvuzela %client ~]
+    ~&  >>  "message delivered to client"
+    `this
+      [%vuvuzela %chain %forward ~]
+    ~&  >>  "fonion-list delivered to next server"
+    `this
+  ==
 ++  on-leave  on-leave:def
 ++  on-peek   on-peek:def
 ++  on-arvo   on-arvo:def
 ++  on-fail   on-fail:def
 --
 |%
-  ++  decrypt-fonion
-    |=  [onion=fonion our=@p]
-    ^-  [fonion symkey]
-    =/  vane  (ames !>(..zuse))
-    =.  crypto-core.ames-state.vane
-      (pit:nu:crub:crypto 512 (shaz our))
-    =/  our-sec  sec:ex:crypto-core.ames-state.vane
-    =/  sym
-      (derive-symmetric-key:vane pub.onion our-sec)
-    =/  dec=(unit @)
-      (de:crub:crypto sym payload.onion)
-    ?~  dec
-      !!
-    [(fonion (cue u.dec)) sym]
+++  decrypt-fonion
+  |=  [onion=fonion our=@p]
+  ^-  [fonion symkey]
+  =/  vane  (ames !>(..zuse))
+  =.  crypto-core.ames-state.vane
+    (pit:nu:crub:crypto 512 (shaz our))
+  =/  our-sec  sec:ex:crypto-core.ames-state.vane
+  =/  sym
+    (derive-symmetric-key:vane pub.onion our-sec)
+  =/  dec=(unit @)
+    (de:crub:crypto sym payload.onion)
+  ?~  dec
+    !!
+  [(fonion (cue u.dec)) sym]
 --

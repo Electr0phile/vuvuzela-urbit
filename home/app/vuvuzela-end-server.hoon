@@ -8,7 +8,7 @@
 ::  - encrypt all meassages with own secret keys
 ::  - send them back as bonions
 ::
-/-  vuvuzela
+/-  *vuvuzela
 /+  default-agent, dbug
 /=  ames  /sys/vane/ames
 |%
@@ -22,15 +22,7 @@
 ::
 +$  card  card:agent:gall
 ::
-+$  symkey  symkey:vuvuzela
-+$  pubkey  pubkey:vuvuzela
-+$  crypt  crypt:vuvuzela
-+$  hash  hash:vuvuzela
-+$  dead-drop  dead-drop:vuvuzela
-+$  fonion  fonion:vuvuzela
-+$  bonion  bonion:vuvuzela
-::
-++  prev-server  ~nus
+++  prev-server  ~wes
 --
 %-  agent:dbug
 =|  state=versioned-state
@@ -70,120 +62,106 @@
     ==
   ==
 ::
-++  on-watch
-  |=  =path
-  ^-  (quip card _this)
-  ?+    path  (on-watch:def path)
-      [%vuvuzela %rounds ~]
-    ~&  >  "got subscription from {<src.bowl>}"
-    `this
-  ==
+++  on-watch  on-watch:def
 ++  on-agent
   |=  [=wire =sign:agent:gall]
   ^-  (quip card _this)
-  ~&  >>>  "on-agent received"
-  `this
+  ?+    wire  (on-agent:def wire sign)
+      [%vuvuzela %chain %backward ~]
+    ~&  >>  "bonion-list delivered to prev server"
+    `this
+  ==
 ++  on-leave  on-leave:def
 ++  on-peek   on-peek:def
 ++  on-arvo   on-arvo:def
 ++  on-fail   on-fail:def
 --
 |%
-  ++  handle-fonion-list
-    |=  [fonion-list=(list fonion) our=@p]
-    ^-  (quip card _state)
-    =/  [* bonion-list=(list bonion) dead-drop-map=(map hash [@ crypt]) @]
-      %:  spin
-        fonion-list
-        :*
-          (reap (lent fonion-list) 1.337)
-          `(map hash fonion)`~
-          0
-        ==
-        ~(do handle-fonion our fonion-list)
-      ==
-    ~&  >>  dead-drop-map
-    ~&  >>  bonion-list
-    :_  state
-      :_  ~
+++  handle-fonion-list
+  |=  [fonion-list=(list fonion) our=@p]
+  ^-  (quip card _state)
+  =/  [* bonion-list=(list bonion) dead-drop-map=(map hash [@ crypt]) @]
+    %:  spin
+      fonion-list
       :*
-        %pass  /vuvuzela/chain/backward
-        %agent  [prev-server %vuvuzela-entry-server]
-        %poke  %noun  !>([%bonion-list bonion-list])
+        (reap (lent fonion-list) 1.337)
+        `(map hash fonion)`~
+        0
       ==
-  ::
-  ++  handle-fonion
-    |_  [our=@p fonion-list=(list fonion)]
-    ++  do
-      |=
-        [=fonion bonion-list=(list bonion) dead-drop-map=(map hash [@ crypt]) count=@]
-      ^-  [~ (list bonion) (map hash [@ crypt]) @]
-      =/  =dead-drop
-        (decrypt-dead-drop fonion our)
-      =/  maybe-match
-        (~(get by dead-drop-map) hash.dead-drop)
-      ?~  maybe-match
-        :*
-          ~  bonion-list
-          %+  ~(put by dead-drop-map)
-            hash.dead-drop
-            [count crypt.dead-drop]
-          +(count)
-        ==
-      ~&  >  "found match!"
-      =/  index  -.u.maybe-match
-      =/  client1-pub=pubkey  pub:(snag index fonion-list)
-      =/  client2-pub=pubkey  pub.fonion
-      =/  reply-to-client1
-        %^  encrypt-reply-text
-          crypt.dead-drop  our  client1-pub
-      =/  reply-to-client2
-        %^  encrypt-reply-text
-          +.u.maybe-match  our  client2-pub
-      =/  updated-bonion-list
-        %^  snap
-          %^  snap
-            bonion-list  count  reply-to-client2
-          index
-          reply-to-client1
+      ~(do handle-fonion our fonion-list)
+    ==
+  ~&  >>  dead-drop-map
+  ~&  >>  bonion-list
+  :_  state
+    :_  ~
+    :*
+      %pass  /vuvuzela/chain/backward
+      %agent  [prev-server %vuvuzela-middle-server]
+      %poke  %noun  !>([%bonion-list bonion-list])
+    ==
+::
+++  handle-fonion
+  |_  [our=@p fonion-list=(list fonion)]
+  ++  do
+    |=
+      [=fonion bonion-list=(list bonion) dead-drop-map=(map hash [@ crypt]) count=@]
+    ^-  [~ (list bonion) (map hash [@ crypt]) @]
+    =/  =dead-drop
+      (decrypt-dead-drop fonion our)
+    =/  maybe-match
+      (~(get by dead-drop-map) hash.dead-drop)
+    ?~  maybe-match
       :*
-        ~  updated-bonion-list
-        (~(del by dead-drop-map) hash.dead-drop)
+        ~  bonion-list
+        %+  ~(put by dead-drop-map)
+          hash.dead-drop
+          [count crypt.dead-drop]
         +(count)
       ==
-    --
-  ::
-  ++  encrypt-reply-text
-    |=  [message=crypt our=@p their-pub=pubkey]
-    =/  vane  (ames !>(..zuse))
-    =.  crypto-core.ames-state.vane
-      (pit:nu:crub:crypto 512 (shaz our))
-    =/  our-sec  sec:ex:crypto-core.ames-state.vane
-    =/  sym
-      (derive-symmetric-key:vane their-pub our-sec)
-    (en:crub:crypto sym message)
-  ::
-  ++  decrypt-dead-drop
-    |=  [onion=fonion our=@p]
-    =/  vane  (ames !>(..zuse))
-    =.  crypto-core.ames-state.vane
-      (pit:nu:crub:crypto 512 (shaz our))
-    =/  our-sec  sec:ex:crypto-core.ames-state.vane
-    =/  sym
-      (derive-symmetric-key:vane pub.onion our-sec)
-    =/  dec=(unit @)
-      (de:crub:crypto sym payload.onion)
-    ?~  dec
-      !!
-    (dead-drop (cue u.dec))
-  ++  sas
-    |=  [onion=fonion our=@p]
-    =/  vane  (ames !>(..zuse))
-    =.  crypto-core.ames-state.vane  (pit:nu:crub:crypto 512 (shaz our))
-    =/  our-sec  sec:ex:crypto-core.ames-state.vane
-    =/  sym  (derive-symmetric-key:vane pub.onion our-sec)
-    =/  dec=(unit @)  (de:crub:crypto sym payload.onion)
-    ?~  dec
-      !!
-    (fonion (cue u.dec))
+    ~&  >  "found match!"
+    =/  index  -.u.maybe-match
+    =/  client1-pub=pubkey  pub:(snag index fonion-list)
+    =/  client2-pub=pubkey  pub.fonion
+    =/  reply-to-client1
+      %^  encrypt-reply-text
+        crypt.dead-drop  our  client1-pub
+    =/  reply-to-client2
+      %^  encrypt-reply-text
+        +.u.maybe-match  our  client2-pub
+    =/  updated-bonion-list
+      %^  snap
+        %^  snap
+          bonion-list  count  reply-to-client2
+        index
+        reply-to-client1
+    :*
+      ~  updated-bonion-list
+      (~(del by dead-drop-map) hash.dead-drop)
+      +(count)
+    ==
+  --
+::
+++  encrypt-reply-text
+  |=  [message=crypt our=@p their-pub=pubkey]
+  =/  vane  (ames !>(..zuse))
+  =.  crypto-core.ames-state.vane
+    (pit:nu:crub:crypto 512 (shaz our))
+  =/  our-sec  sec:ex:crypto-core.ames-state.vane
+  =/  sym
+    (derive-symmetric-key:vane their-pub our-sec)
+  (en:crub:crypto sym message)
+::
+++  decrypt-dead-drop
+  |=  [onion=fonion our=@p]
+  =/  vane  (ames !>(..zuse))
+  =.  crypto-core.ames-state.vane
+    (pit:nu:crub:crypto 512 (shaz our))
+  =/  our-sec  sec:ex:crypto-core.ames-state.vane
+  =/  sym
+    (derive-symmetric-key:vane pub.onion our-sec)
+  =/  dec=(unit @)
+    (de:crub:crypto sym payload.onion)
+  ?~  dec
+    !!
+  (dead-drop (cue u.dec))
 --
