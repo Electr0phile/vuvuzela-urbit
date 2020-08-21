@@ -9,6 +9,7 @@
 ::  - restore original permutation and decrypt
 ::    bonions
 ::
+/-  vuvuzela
 /+  default-agent, dbug
 /=  ames  /sys/vane/ames
 |%
@@ -19,10 +20,11 @@
 +$  state-zero  [%0 round=@ fonion-list=(list fonion) clients=(list [@p symkey])]
 ::
 +$  card  card:agent:gall
-+$  symkey  @uwsymmetrickey
-+$  pubkey  @uwpublickey
-+$  fonion  [pub=pubkey payload=@]
-+$  bonion  @
+::
++$  symkey  symkey:vuvuzela
++$  pubkey  pubkey:vuvuzela
++$  fonion  fonion:vuvuzela
++$  bonion  bonion:vuvuzela
 ::
 ++  next-server  ~zod
 --

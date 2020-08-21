@@ -8,6 +8,7 @@
 ::  - encrypt all meassages with own secret keys
 ::  - send them back as bonions
 ::
+/-  vuvuzela
 /+  default-agent, dbug
 /=  ames  /sys/vane/ames
 |%
@@ -20,13 +21,14 @@
     ==
 ::
 +$  card  card:agent:gall
-+$  symkey  @uwsymmetrickey
-+$  pubkey  @uwpublickey
-+$  crypt  @
-+$  hash  @
-+$  dead-drop   [=hash =crypt]
-+$  fonion  [pub=pubkey payload=@]
-+$  bonion  @
+::
++$  symkey  symkey:vuvuzela
++$  pubkey  pubkey:vuvuzela
++$  crypt  crypt:vuvuzela
++$  hash  hash:vuvuzela
++$  dead-drop  dead-drop:vuvuzela
++$  fonion  fonion:vuvuzela
++$  bonion  bonion:vuvuzela
 ::
 ++  prev-server  ~nus
 --

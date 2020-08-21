@@ -1,3 +1,4 @@
+/-  vuvuzela
 /+  default-agent, dbug
 /=  ames  /sys/vane/ames
 |%
@@ -8,34 +9,14 @@
 +$  state-zero  [%0 =chat round-partner=(unit @p) round=@]
 ::
 +$  card  card:agent:gall
-+$  symkey  @uwsymmetrickey
-+$  pubkey  @uwpublickey
-::  crypt is a client-to-client encrypted text
-::  hash is a dead-drop hash, for two clients
-::    willing to talk it is the same
-::  dead-drop is a pair of two which is only
-::    accessed on the end-server to pair up
-::    clients
 ::
-+$  crypt  @
-+$  hash  @
-+$  dead-drop  [=hash =crypt]
-::  onion is a message with >1 layers of encryption
-::  fonion = forward onion
-::    Travels only in client -> end server direction.
-::    Encrypted in nus->wes->zod order if chain is
-::      (entry)->zod->wes->nus->(end).
-::    Each server peels off a layer using own private
-::      key and fonion's public key.
-::    Each round client's public-private pair for each
-::      server is generated anew.
-::  bonion = backward onion
-::    Travels only in end server -> client direction.
-::    Each server encrypts it using own private key
-::      and pubkey ontained from forward pass.
-::
-+$  fonion  [pub=pubkey payload=@]
-+$  bonion  @
++$  symkey  symkey:vuvuzela
++$  pubkey  pubkey:vuvuzela
++$  crypt  crypt:vuvuzela
++$  hash  hash:vuvuzela
++$  dead-drop  dead-drop:vuvuzela
++$  fonion  fonion:vuvuzela
++$  bonion  bonion:vuvuzela
 ::  Client-side messaging history.
 ::
 +$  message  [date=@da text=@t my=?(%.y %.n)]
@@ -149,7 +130,7 @@
     ~&  >>>  "error decrypting partner layer"
     `state
   =/  text=@t  u.dec
-  ~&  >>  "received message {<text>}"
+  ~&  >  "received message {<text>}"
   :-  ~
   %=  state
     round-partner  ~
@@ -164,9 +145,9 @@
   =/  sym=symkey
     -:(generate-keys our ?:(=(our ~bud) ~nec ~bud))
   =/  =hash  (sham [round.state sym])
-  ~&  >>  "sending message {<text>} to"
-  ~&  >>  "{<ship>} through {<entry-server>}"
-  ~&  >>  "dead-drop hash: {<hash>}"
+  ~&  >  "sending message {<text>} to"
+  ~&  >  "{<ship>} through {<entry-server>}"
+  ~&  >  "dead-drop hash: {<hash>}"
   =/  =crypt  (en:crub:crypto sym text)
   =/  [sym=symkey pub=pubkey]  (generate-keys our ~zod)
   =/  =dead-drop  [hash crypt]
