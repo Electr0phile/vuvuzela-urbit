@@ -1,6 +1,7 @@
 /-  *vuvuzela
 /+  default-agent, dbug
 /=  ames  /sys/vane/ames
+/=  shuffle  /gen/shuffle-list
 |%
 +$  versioned-state
     $%  state-zero
@@ -72,6 +73,10 @@
       =/  ship  `@p`+.q.vase
       ~&  >>>  :-(ship (~(get by chat.state) ship))
       `this
+        ::
+        %shuffle
+      ~&  >>  "shuffling {<(limo ~[1 2 3 4])>}: {<(shuffle (limo ~[1 2 3 4]) eny.bowl)>}"
+      `this
     ==
   ==
 ::
@@ -105,6 +110,7 @@
   ~&  >  "{<ship>} through {<entry-server>}"
   ~&  >>  "dead-drop hash: {<hash>}"
   =/  =crypt  (en:crub:crypto sym text)
+  ~&  >  "{<+:(cue crypt)>}"
   =/  [sym=symkey pub=pubkey]  (generate-keys our ~zod)
   =/  =dead-drop  [hash crypt]
   =/  fonion-1=fonion
