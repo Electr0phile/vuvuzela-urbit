@@ -12,7 +12,7 @@ through one server.~~
 3. ~~Chain of servers (no permutations).~~
     1. ~~End-server logic.~~
         * ~~Reevaluate style, reformat to conventions.~~
-    2. Middle-server logic.
+    2. ~~Middle-server logic.~~
 4. Permutations.
 5. Timed rounds using Behn.
 6. Resend if not received client logic, multiple conversations per round.
