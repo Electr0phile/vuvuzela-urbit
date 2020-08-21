@@ -1,28 +1,28 @@
 ::  Entry server's responsibilities:
 ::  - announce a round
 ::  - gather requests from clients
-::  - decrypt and shuffle forward-onions, remember
+::  - decrypt and shuffle fonions, remember
 ::    the permutation and pubkeys
-::  - send list of requests to the next server in chain
-::  - receive a list of responses from the next server in chain
-::  - restore original permutation and decrypt backprop-onions
+::  - send list of fonions to the next server in chain
+::  - receive a list of bonion from the
+::    next server in chain
+::  - restore original permutation and decrypt
+::    bonions
 ::
 /+  default-agent, dbug
 /=  ames  /sys/vane/ames
 |%
 +$  versioned-state
-    $%  state-zero
-    ==
+  $%  state-zero
+  ==
 ::
-+$  state-zero
-    $:  [%0 round=@ forward-list=(list forward-onion) clients=(list [@p symkey])]
-    ==
++$  state-zero  [%0 round=@ fonion-list=(list fonion) clients=(list [@p symkey])]
 ::
 +$  card  card:agent:gall
 +$  symkey  @uwsymmetrickey
 +$  pubkey  @uwpublickey
-+$  forward-onion  [pub=pubkey encrypted-payload=@]
-+$  backward-onion  @
++$  fonion  [pub=pubkey payload=@]
++$  bonion  @
 ::
 ++  next-server  ~zod
 --
@@ -56,40 +56,82 @@
       %noun
     ?+    q.vase  (on-poke:def mark vase)
         ::
-        %announce-round
-      ~&  >  "announcing round {<+(round.state)>}"
-      :_  this(state state(round +(round.state), forward-list ~, clients ~))
-      [%give %fact ~[/vuvuzela/rounds] %atom !>(+(round.state))]~
+        %start-round
+      ~&  >  "starting round {<+(round.state)>}"
+      :-  :~
+            :*  %give  %fact  ~[/vuvuzela/rounds]
+                %atom  !>(+(round.state))
+            ==
+          ==
+      %=  this
+        state
+          %=  state
+            round  +(round.state)
+            fonion-list  ~
+            clients  ~
+          ==
+      ==
+        ::  TODO:
+        ::  - permutations
         ::
-        [%forward-onion @ @]
-      ~&  >  "forwarding onion"
-      ::  TODO:
-      ::  - permutations
-      ::  - onion decryption
-      =/  [=forward-onion sym=symkey]  (decrypt-onion +.q.vase our.bowl)
-      `this(state state(forward-list (snoc forward-list.state forward-onion), clients (snoc clients.state [src.bowl sym])))
+        [%fonion @ @]
+      ~&  >  "fonion received"
+      ^-  (quip card _this)
+      =/  [=fonion sym=symkey]
+        (decrypt-fonion +.q.vase our.bowl)
+      :-  ~
+        %=  this
+          state
+          %=  state
+            fonion-list
+          (snoc fonion-list.state fonion)
+            clients
+          (snoc clients.state [src.bowl sym])
+          ==
+        ==
         ::
-        %pass-forward-list
+        %end-round
+      ^-  (quip card _this)
       :_  this
-      [%pass /vuvuzela/chain/forward %agent [next-server %vuvuzela-end-server] %poke %noun !>([%forward-list forward-list.state])]~
+        :~
+          :*
+            %pass  /vuvuzela/chain/forward
+            %agent  [next-server %vuvuzela-end-server]
+            %poke  %noun
+            !>([%fonion-list fonion-list.state])
+          ==
+        ==
         ::
-        [%backward-list *]
-      ~&  >  "received backward list"
-      =/  backward-list  ((list backward-onion) +.q.vase)
+        [%bonion-list *]
+      ^-  (quip card _this)
+      =/  bonion-list  ((list bonion) +.q.vase)
       =/  clients  clients.state
-      ?.  =((lent backward-list) (lent clients))
-        ~&  >>>  "sent and received lists are not same size"
+      ?.  =((lent bonion-list) (lent clients))
+        ~&
+          >>>  "sent and received lists are not same size"
         `this
       =/  cards=(list card)  ~
       |-
       ?~  clients
         [cards this]
-      ?~  backward-list
+      ?~  bonion-list
         [cards this]
       =/  sym  +.i.clients
       =/  client  -.i.clients
-      =/  onion  i.backward-list
-      $(cards (snoc cards [%pass /vuvuzela/chain/backward %agent [client %vuvuzela-client] %poke %noun !>([%backward-onion (en:crub:crypto sym onion)])]), clients t.clients, backward-list t.backward-list)
+      =/  onion  i.bonion-list
+      %=  $
+        cards
+          %+  snoc
+            cards
+          :*
+            %pass  /vuvuzela/chain/backward
+            %agent  [client %vuvuzela-client]
+            %poke  %noun
+            !>([%bonion (en:crub:crypto sym onion)])
+          ==
+        clients  t.clients
+        bonion-list  t.bonion-list
+      ==
     ==
   ==
 ::
@@ -112,15 +154,18 @@
 ++  on-fail   on-fail:def
 --
 |%
-  ++  decrypt-onion
-    |=  [input-onion=forward-onion our=@p]
-    ^-  [forward-onion symkey]
+  ++  decrypt-fonion
+    |=  [onion=fonion our=@p]
+    ^-  [fonion symkey]
     =/  vane  (ames !>(..zuse))
-    =.  crypto-core.ames-state.vane  (pit:nu:crub:crypto 512 (shaz our))
+    =.  crypto-core.ames-state.vane
+      (pit:nu:crub:crypto 512 (shaz our))
     =/  our-sec  sec:ex:crypto-core.ames-state.vane
-    =/  sym  (derive-symmetric-key:vane pub.input-onion our-sec)
-    =/  dec=(unit @)  (de:crub:crypto sym encrypted-payload.input-onion)
+    =/  sym
+      (derive-symmetric-key:vane pub.onion our-sec)
+    =/  dec=(unit @)
+      (de:crub:crypto sym payload.onion)
     ?~  dec
       !!
-    [(forward-onion (cue u.dec)) sym]
+    [(fonion (cue u.dec)) sym]
 --

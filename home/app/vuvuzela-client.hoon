@@ -5,23 +5,42 @@
     $%  state-zero
     ==
 ::
-+$  state-zero
-    $:  [%0 =chat round-partner=(unit @p) round=@]
-    ==
++$  state-zero  [%0 =chat round-partner=(unit @p) round=@]
 ::
 +$  card  card:agent:gall
 +$  symkey  @uwsymmetrickey
 +$  pubkey  @uwpublickey
+::  crypt is a client-to-client encrypted text
+::  hash is a dead-drop hash, for two clients
+::    willing to talk it is the same
+::  dead-drop is a pair of two which is only
+::    accessed on the end-server to pair up
+::    clients
 ::
-+$  encrypted-text  @
-+$  dead-drop  @
-+$  exchange-request   [%exchange-request =dead-drop =encrypted-text]
-+$  exchange-response  [%exchange-response =encrypted-text]
-+$  forward-onion  [pubkey encrypted-payload=@]
-+$  backward-onion  @
++$  crypt  @
++$  hash  @
++$  dead-drop  [=hash =crypt]
+::  onion is a message with >1 layers of encryption
+::  fonion = forward onion
+::    Travels only in client -> end server direction.
+::    Encrypted in nus->wes->zod order if chain is
+::      (entry)->zod->wes->nus->(end).
+::    Each server peels off a layer using own private
+::      key and fonion's public key.
+::    Each round client's public-private pair for each
+::      server is generated anew.
+::  bonion = backward onion
+::    Travels only in end server -> client direction.
+::    Each server encrypts it using own private key
+::      and pubkey ontained from forward pass.
+::
++$  fonion  [pub=pubkey payload=@]
++$  bonion  @
+::  Client-side messaging history.
 ::
 +$  message  [date=@da text=@t my=?(%.y %.n)]
 +$  chat  (map ship=@p (list message))
+::  Temporary hard-coded chain.
 ::
 ++  entry-server  ~nus
 --
@@ -51,26 +70,27 @@
 ++  on-poke
   |=  [=mark =vase]
   ^-  (quip card _this)
-  ~&  >  "poke received"
   ?+    mark  (on-poke:def mark vase)
       %noun
     ?+    q.vase  (on-poke:def mark vase)
+        ::  Request exchange of text with some ship
         ::
-        [%request @ @]
+        [%exchange @ @]
       =^  cards  state
-      (handle-exchange-request +<.q.vase +>.q.vase our.bowl now.bowl)
+      (handle-exchange +<.q.vase +>.q.vase our.bowl now.bowl)
+      [cards this]
+        ::  Process response from entry-server
+        ::
+        [%bonion @]
+      =^  cards  state
+      (handle-bonion +.q.vase our.bowl now.bowl)
       [cards this]
         ::
-        [%backward-onion @]
-      =^  cards  state
-      (handle-backward-onion +.q.vase our.bowl now.bowl)
-      [cards this]
-        ::
-        %subscribe
+        %subscribe-for-rounds
       :_  this
       :~
-        :*  %pass  /vuvuzela/rounds/(scot %p our.bowl)  %agent
-            [entry-server %vuvuzela-entry-server]
+        :*  %pass  /vuvuzela/rounds/(scot %p our.bowl)
+            %agent  [entry-server %vuvuzela-entry-server]
             [%watch /vuvuzela/rounds]
         ==
       ==
@@ -103,69 +123,68 @@
 ++  on-fail   on-fail:def
 --
 |%
-++  handle-backward-onion
-  |=  [=encrypted-text our=@p now=@da]
+++  handle-bonion
+  |=  [=bonion our=@p now=@da]
   ^-  (quip card _state)
-  ~&  >  "handling backward onion..."
   ?~  round-partner.state
-    ~&  >>>  "mistakenly received message"  `state
-  ~&  >  "partner test passed..."
+    ~&  >>>  "mistakenly received message"
+    `state
   =/  key  -:(generate-keys our ~nus)
-  =/  dec=(unit @t)  (de:crub:crypto key encrypted-text)
+  =/  dec=(unit @)  (de:crub:crypto key bonion)
   ?~  dec
-    ~&  >>>  "error decrypting ~nec layer"  `state
-  ~&  >  "first layer passed..."
+    ~&  >>>  "error decrypting ~nec layer"
+    `state
   =/  key  -:(generate-keys our ~zod)
-  =/  decc  (de:crub:crypto key u.dec)
-  =/  dec=(unit @t)  decc
-  ~&  >  "decrypted!!!"
+  =/  dec=(unit @)  (de:crub:crypto key u.dec)
   ?~  dec
-    ~&  >>>  "error decrypting ~zod layer"  `state
-  ~&  >  "second layer passed..."
+    ~&  >>>  "error decrypting ~zod layer"
+    `state
   =/  key  -:(generate-keys our ?:(=(our ~bud) ~nec ~bud))
-  =/  dec=(unit @t)  (de:crub:crypto key u.dec)
+  =/  dec=(unit @)  (de:crub:crypto key u.dec)
   ?~  dec
-    ~&  >>>  "error decrypting partner layer"  `state
+    ~&  >>>  "error decrypting partner layer"
+    `state
   =/  text=@t  u.dec
   ~&  >>  "received message {<text>}"
   :-  ~
   %=  state
     round-partner  ~
-    chat  %:  update-chat
+    chat  %^  update-chat
             chat.state
             +.round-partner.state
             [now text %.n]
-          ==
   ==
 ::
-++  handle-exchange-request
+++  handle-exchange
   |=  [text=@t ship=@p our=@p now=@da]
-  =/  sym=symkey  -:(generate-keys our ?:(=(our ~bud) ~nec ~bud))
-  =/  =dead-drop  (sham [round.state sym])
+  =/  sym=symkey
+    -:(generate-keys our ?:(=(our ~bud) ~nec ~bud))
+  =/  =hash  (sham [round.state sym])
   ~&  >>  "sending message {<text>} to"
   ~&  >>  "{<ship>} through {<entry-server>}"
-  ~&  >>  "dead-drop: {<dead-drop>}"
-  =/  =encrypted-text  (en:crub:crypto sym text)
+  ~&  >>  "dead-drop hash: {<hash>}"
+  =/  =crypt  (en:crub:crypto sym text)
   =/  [sym=symkey pub=pubkey]  (generate-keys our ~zod)
-  =/  =exchange-request  [%exchange-request dead-drop encrypted-text]
-  =/  forward-onion-1=forward-onion
-    [pub (en:crub:crypto sym (jam exchange-request))]
+  =/  =dead-drop  [hash crypt]
+  =/  fonion-1=fonion
+    [pub (en:crub:crypto sym (jam dead-drop))]
   =/  [sym=symkey pub=pubkey]  (generate-keys our ~nus)
-  =/  forward-onion-2=forward-onion
-    [pub (en:crub:crypto sym (jam forward-onion-1))]
-  :-  :~
-        :*  %pass  /vuvuzela/chain  %agent
-            [entry-server %vuvuzela-entry-server]
-            %poke  %noun  !>([%forward-onion forward-onion-2])
-        ==
-      ==
-  %=  state
-    chat  %:  update-chat
-            chat.state
-            ship
-            [now text %.y]
-          ==
-    round-partner  (some ship)
+  =/  fonion-2=fonion
+    [pub (en:crub:crypto sym (jam fonion-1))]
+  :_
+    %=  state
+      chat  %^  update-chat
+              chat.state
+              ship
+              [now text %.y]
+      round-partner  (some ship)
+    ==
+  :~
+    :*  %pass  /vuvuzela/chain
+        %agent  [entry-server %vuvuzela-entry-server]
+        %poke  %noun
+        !>([%fonion fonion-2])
+    ==
   ==
   ::
   ++  update-chat
@@ -181,10 +200,12 @@
     =/  vane  (ames !>(..zuse))
     =/  our-vane  vane
     =/  their-vane  vane
-    =.  crypto-core.ames-state.our-vane  (pit:nu:crub:crypto 512 (shaz our))
+    =.  crypto-core.ames-state.our-vane
+      (pit:nu:crub:crypto 512 (shaz our))
     =/  our-sec  sec:ex:crypto-core.ames-state.our-vane
     =/  our-pub  pub:ex:crypto-core.ames-state.our-vane
-    =.  crypto-core.ames-state.their-vane  (pit:nu:crub:crypto 512 (shaz their))
+    =.  crypto-core.ames-state.their-vane
+      (pit:nu:crub:crypto 512 (shaz their))
     =/  their-pub  pub:ex:crypto-core.ames-state.their-vane
     =/  sym  (derive-symmetric-key:vane their-pub our-sec)
     [sym our-pub]

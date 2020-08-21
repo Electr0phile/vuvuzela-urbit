@@ -1,6 +1,6 @@
 #!/bin/sh
 URBIT_PATH=/home/electro/permanent/programs/urbit
-SHIPS="bud nec nus wes zod"
+SHIPS="bud nec nus zod"
 
 for ship in $SHIPS
 do
