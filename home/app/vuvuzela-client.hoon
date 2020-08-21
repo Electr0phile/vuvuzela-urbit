@@ -82,6 +82,7 @@
         ::  Process response from entry-server
         ::
         [%bonion @]
+      ~&  >  "got bonion"
       =^  cards  state
       (handle-bonion +.q.vase our.bowl now.bowl)
       [cards this]
@@ -133,6 +134,9 @@
   =/  dec=(unit @)  (de:crub:crypto key bonion)
   ?~  dec
     ~&  >>>  "error decrypting ~nec layer"
+    `state
+  ?:  =(1.337 u.dec)
+    ~&  >>>  "partner did not receive message"
     `state
   =/  key  -:(generate-keys our ~zod)
   =/  dec=(unit @)  (de:crub:crypto key u.dec)
