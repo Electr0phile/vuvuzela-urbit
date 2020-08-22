@@ -73,10 +73,10 @@
       =/  ship  `@p`+.q.vase
       ~&  >>>  :-(ship (~(get by chat.state) ship))
       `this
-        ::
-        %shuffle
-      ~&  >>  "shuffling {<(limo ~[1 2 3 4])>}: {<(shuffle (limo ~[1 2 3 4]) eny.bowl)>}"
-      `this
+        :::
+        ::%shuffle
+      ::~&  >>  "generating permutation of length 5: {<(shuffle 5 eny.bowl)>}"
+      ::`this
     ==
   ==
 ::
