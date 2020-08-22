@@ -12,6 +12,29 @@ Relevant particularities of Urbit in relation to Vuvuzela:
   the same order they were sent. We can use that to
   increase the number of simultaneous conversations.
 
+Addressing Vuvuzela's limitations from Urbit's standpoint:
+- Bandwidth: ???
+- Deployment costs: ???
+- Treating users as noise: ???
+- PKI:   -----------.
+- Forward secrecy:  V
+  Already in place! Extremely easy to access public keys,
+  relatively easy to change private keys in case of need
+  for forward secrecy.
+- Message size: ???
+- Group privacy: ???
+- DoS attacks:
+  Scarcity of Urbit's namespace prevents users from abusing
+  the system, making costs of spam much larger than in the
+  old net.
+- Multiple conversations:
+  For now, each round you cand send one message and
+  receive one message. This can be improved using the
+  total ordering property of message delivery in ames:
+  Along a particular wire, every message is delivered
+  exactly once and in the same order it was sent.
+
 Important points:
-- For now, each round you cand send one message and
-  receive one message.
+- Use Karaoke's optimistic indistinguishability? Send
+  two packets in case no conversation is held and get
+  them paired together, or something.
