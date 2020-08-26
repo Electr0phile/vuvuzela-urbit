@@ -1,3 +1,3 @@
 #!/bin/sh
 
-vim -p $(find ./home/ -type f) -S local-vimrc.vim
+vim -p $(find ./home/ -type f -name "*.hoon") -S local-vimrc.vim

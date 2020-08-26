@@ -12,13 +12,14 @@
 /-  *vuvuzela
 /+  default-agent, dbug
 /=  ames  /sys/vane/ames
-/=  shuffle  /gen/shuffle-list
+/=  permute  /gen/random-permute-list
+/=  unpermute  /gen/unpermute-list
 |%
 +$  versioned-state
   $%  state-zero
   ==
 ::
-+$  state-zero  [%0 round=@ fonion-list=(list fonion) clients=(list [@p symkey])]
++$  state-zero  [%0 round=@ fonion-list=(list fonion) clients=(list [@p symkey]) permutation=(list @)]
 ::
 +$  card  card:agent:gall
 ::
@@ -34,7 +35,7 @@
 ++  on-init
   ^-  (quip card _this)
   ~&  >  '%vuvuzela-server-entry initialized successfully'
-  =.  state  [%0 0 ~ ~]
+  =.  state  [%0 0 ~ ~ ~]
   `this
 ::
 ++  on-save
@@ -45,7 +46,7 @@
   |=  old-state=vase
   ^-  (quip card _this)
   ~&  >  '%vuvuzela-server-entry recompiled successfully'
-  `this(state [%0 0 ~ ~])
+  `this(state [%0 0 ~ ~ ~])
 :::
 ++  on-poke
   |=  [=mark =vase]
@@ -70,7 +71,6 @@
           ==
       ==
         ::  TODO:
-        ::  - permutations
         ::
         [%fonion @ @]
       ~&  >  "fonion received"
@@ -90,18 +90,22 @@
         ::
         %end-round
       ^-  (quip card _this)
-      :_  this
-      :_  ~
+      =/  [shuffled-fonion-list=(list fonion) permutation=(list @)]
+        (permute fonion-list.state eny.bowl)
+      :_  this(state state(permutation permutation))
+      :~
         :*
           %pass  /vuvuzela/chain/forward
           %agent  [next-server %vuvuzela-middle-server]
           %poke  %noun
-          !>([%fonion-list fonion-list.state])
+          !>([%fonion-list shuffled-fonion-list])
         ==
+      ==
         ::
         [%bonion-list *]
       ^-  (quip card _this)
-      =/  bonion-list  ((list bonion) +.q.vase)
+      =/  bonion-list
+        (unpermute ((list bonion) +.q.vase) permutation.state)
       =/  clients  clients.state
       ?.  =((lent bonion-list) (lent clients))
         ~&

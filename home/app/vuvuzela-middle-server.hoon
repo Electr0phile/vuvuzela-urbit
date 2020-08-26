@@ -17,12 +17,14 @@
 /-  *vuvuzela
 /+  default-agent, dbug
 /=  ames  /sys/vane/ames
+/=  permute  /gen/random-permute-list
+/=  unpermute  /gen/unpermute-list
 |%
 +$  versioned-state
   $%  state-zero
   ==
 ::
-+$  state-zero  [%0 round=@ fonion-list=(list fonion) symkey-list=(list symkey)]
++$  state-zero  [%0 round=@ fonion-list=(list fonion) symkey-list=(list symkey) permutation=(list @)]
 ::
 +$  card  card:agent:gall
 ::
@@ -39,7 +41,7 @@
 ++  on-init
   ^-  (quip card _this)
   ~&  >  '%vuvuzela-server-entry initialized successfully'
-  =.  state  [%0 0 ~ ~]
+  =.  state  [%0 0 ~ ~ ~]
   `this
 ::
 ++  on-save
@@ -50,7 +52,7 @@
   |=  old-state=vase
   ^-  (quip card _this)
   ~&  >  '%vuvuzela-server-entry recompiled successfully'
-  `this(state [%0 0 ~ ~])
+  `this(state [%0 0 ~ ~ ~])
 :::
 ++  on-poke
   |=  [=mark =vase]
@@ -62,7 +64,7 @@
         [%fonion-list *]
       ~&  >  "received fonion-list"
       =^  cards  state
-      (handle-fonion-list ((list fonion) +.q.vase) our.bowl)
+      (handle-fonion-list ((list fonion) +.q.vase) our.bowl eny.bowl)
       [cards this]
         ::
         [%bonion-list *]
@@ -92,19 +94,21 @@
 --
 |%
 ++  handle-fonion-list
-  |=  [in-list=(list fonion) our=@p]
+  |=  [in-list=(list fonion) our=@p eny=@]
   ^-  (quip card _state)
   =/  [out-list=(list fonion) symkey-list=(list symkey)]
     %^  spin
       in-list
       `(list symkey)`~
       ~(do handle-fonion our)
-  :_  state(symkey-list symkey-list)
+  =/  [shuffled-out-list=(list fonion) permutation=(list @)]
+    (permute out-list eny)
+  :_  state(symkey-list symkey-list, permutation permutation)
     :_  ~
       :*
         %pass  /vuvuzela/chain/forward
         %agent  [next-server %vuvuzela-end-server]
-        %poke  %noun  !>([%fonion-list out-list])
+        %poke  %noun  !>([%fonion-list shuffled-out-list])
       ==
 ::
 ++  handle-fonion
@@ -133,8 +137,9 @@
   [(fonion (cue u.dec)) sym]
 ::
 ++  handle-bonion-list
-  |=  [in-list=(list bonion) our=@p]
+  |=  [permuted-in-list=(list bonion) our=@p]
   ^-  (quip card _state)
+  =/  in-list  (unpermute permuted-in-list permutation.state)
   ?.  =((lent in-list) (lent symkey-list.state))
     ~&  >>>  "bonion-list and symkey-list have different lengths!"
     `state

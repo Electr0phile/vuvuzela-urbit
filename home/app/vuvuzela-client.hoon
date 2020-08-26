@@ -1,7 +1,6 @@
 /-  *vuvuzela
 /+  default-agent, dbug
 /=  ames  /sys/vane/ames
-/=  shuffle  /gen/shuffle-list
 |%
 +$  versioned-state
     $%  state-zero
