@@ -6,3 +6,5 @@ for ship in $SHIPS
 do
   xterm -e "screen -d -R -S $ship $URBIT_PATH/urbit $URBIT_PATH/vuvuzela/$ship" &
 done
+
+exit

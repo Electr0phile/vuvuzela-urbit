@@ -72,10 +72,6 @@
       =/  ship  `@p`+.q.vase
       ~&  >>>  :-(ship (~(get by chat.state) ship))
       `this
-        :::
-        ::%shuffle
-      ::~&  >>  "generating permutation of length 5: {<(shuffle 5 eny.bowl)>}"
-      ::`this
     ==
   ==
 ::

@@ -53,7 +53,7 @@
   ^-  (quip card _this)
   ~&  >  '%vuvuzela-server-entry recompiled successfully'
   `this(state [%0 0 ~ ~ ~])
-:::
+::
 ++  on-poke
   |=  [=mark =vase]
   ^-  (quip card _this)

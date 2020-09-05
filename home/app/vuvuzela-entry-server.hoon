@@ -70,7 +70,6 @@
             clients  ~
           ==
       ==
-        ::  TODO:
         ::
         [%fonion @ @]
       ~&  >  "fonion received"
