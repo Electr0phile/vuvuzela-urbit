@@ -54,10 +54,10 @@
       %noun
     ?+    q.vase  (on-poke:def mark vase)
         ::
-        [%fonion-list *]
-      ~&  >  "received fonion-list"
+        [%forward-package *]
+      ~&  >  "received forward-package"
       =^  cards  state
-      (handle-fonion-list ((list fonion) +.q.vase) our.bowl)
+      (handle-forward-package (@tas +<.q.vase) ((list fonion) +>.q.vase) our.bowl)
       [cards this]
     ==
   ==
@@ -77,8 +77,11 @@
 ++  on-fail   on-fail:def
 --
 |%
-++  handle-fonion-list
-  |=  [fonion-list=(list fonion) our=@p]
+++  handle-forward-package
+  |=  [round-type=@tas fonion-list=(list fonion) our=@p]
+  ?:  =(round-type %dial)
+    ~&  >>>  "a dial round, doing nothing"
+    `state
   ^-  (quip card _state)
   =/  [* bonion-list=(list bonion) dead-drop-map=(map hash [@ crypt]) @]
     %:  spin
@@ -97,7 +100,7 @@
     :*
       %pass  /vuvuzela/chain/backward
       %agent  [prev-server %vuvuzela-middle-server]
-      %poke  %noun  !>([%bonion-list bonion-list])
+      %poke  %noun  !>([%backward-package bonion-list])
     ==
 ::
 ++  handle-fonion

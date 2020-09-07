@@ -19,7 +19,7 @@
   $%  state-zero
   ==
 ::
-+$  state-zero  [%0 round=@ fonion-list=(list fonion) clients=(list [@p symkey]) permutation=(list @)]
++$  state-zero  [%0 round-number=@ round-type=?(%convo %dial) fonion-list=(list fonion) clients=(list [@p symkey]) permutation=(list @)]
 ::
 +$  card  card:agent:gall
 ::
@@ -35,7 +35,7 @@
 ++  on-init
   ^-  (quip card _this)
   ~&  >  '%vuvuzela-server-entry initialized successfully'
-  =.  state  [%0 0 ~ ~ ~]
+  =.  state  [%0 0 %dial ~ ~ ~]
   `this
 ::
 ++  on-save
@@ -46,7 +46,7 @@
   |=  old-state=vase
   ^-  (quip card _this)
   ~&  >  '%vuvuzela-server-entry recompiled successfully'
-  `this(state [%0 0 ~ ~ ~])
+  `this(state [%0 0 %dial ~ ~ ~])
 :::
 ++  on-poke
   |=  [=mark =vase]
@@ -55,24 +55,42 @@
       %noun
     ?+    q.vase  (on-poke:def mark vase)
         ::
-        %start-round
-      ~&  >  "starting round {<+(round.state)>}"
+        %start-convo-round
+      ~&  >  "starting convo round {<+(round-number.state)>}"
       :-
       :_  ~
         :*  %give  %fact  ~[/vuvuzela/rounds]
-            %atom  !>(+(round.state))
+            %noun  !>([%convo +(round-number.state)])
         ==
       %=  this
         state
           %=  state
-            round  +(round.state)
+            round-number  +(round-number.state)
+            round-type  %convo
             fonion-list  ~
             clients  ~
           ==
       ==
         ::
-        [%fonion @ @]
-      ~&  >  "fonion received"
+        %start-dial-round
+      ~&  >  "starting dial round {<+(round-number.state)>}"
+      :-
+      :_  ~
+        :*  %give  %fact  ~[/vuvuzela/rounds]
+            %noun  !>([%dial +(round-number.state)])
+        ==
+      %=  this
+        state
+          %=  state
+            round-number  +(round-number.state)
+            round-type  %dial
+            fonion-list  ~
+            clients  ~
+          ==
+      ==
+        ::
+        [%convo-fonion @ @]
+      ~&  >  "convo-fonion received"
       ^-  (quip card _this)
       =/  [=fonion sym=symkey]
         (decrypt-fonion +.q.vase our.bowl)
@@ -87,21 +105,45 @@
         ==
       ==
         ::
+        [%dial-fonion @ @]
+      ~&  >  "dial-fonion received"
+      ^-  (quip card _this)
+      =/  [=fonion sym=symkey]
+        (decrypt-fonion +.q.vase our.bowl)
+      :-  ~
+      %=  this
+        state
+        %=  state
+          fonion-list
+        (snoc fonion-list.state fonion)
+        ==
+      ==
+        ::
         %end-round
       ^-  (quip card _this)
       =/  [shuffled-fonion-list=(list fonion) permutation=(list @)]
         (permute fonion-list.state eny.bowl)
-      :_  this(state state(permutation permutation))
+      ?:  =(%convo round-type.state)
+        :_  this(state state(permutation permutation))
+        :~
+          :*
+            %pass  /vuvuzela/chain/forward
+            %agent  [next-server %vuvuzela-middle-server]
+            %poke  %noun
+            !>([%forward-package [%convo shuffled-fonion-list]])
+          ==
+        ==
+      :_  this
       :~
         :*
           %pass  /vuvuzela/chain/forward
           %agent  [next-server %vuvuzela-middle-server]
           %poke  %noun
-          !>([%fonion-list shuffled-fonion-list])
+          !>([%forward-package [%dial shuffled-fonion-list]])
         ==
       ==
         ::
-        [%bonion-list *]
+        [%convo-bonion-list *]
       ^-  (quip card _this)
       =/  bonion-list
         (unpermute ((list bonion) +.q.vase) permutation.state)
@@ -129,7 +171,7 @@
             %pass  /vuvuzela/client
             %agent  [client %vuvuzela-client]
             %poke  %noun
-            !>([%bonion (en:crub:crypto sym onion)])
+            !>([%convo-bonion (en:crub:crypto sym onion)])
           ==
       ==
     ==

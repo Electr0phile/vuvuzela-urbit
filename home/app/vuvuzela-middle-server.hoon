@@ -61,16 +61,16 @@
       %noun
     ?+    q.vase  (on-poke:def mark vase)
         ::
-        [%fonion-list *]
-      ~&  >  "received fonion-list"
+        [%forward-package *]
+      ~&  >  "received forward-package of type {<+<.q.vase>}"
       =^  cards  state
-      (handle-fonion-list ((list fonion) +.q.vase) our.bowl eny.bowl)
+      (handle-forward-package (@tas +<.q.vase) ((list fonion) +>.q.vase) our.bowl eny.bowl)
       [cards this]
         ::
-        [%bonion-list *]
-      ~&  >  "received bonion-list"
+        [%backward-package *]
+      ~&  >  "received backward-package"
       =^  cards  state
-      (handle-bonion-list ((list bonion) +.q.vase) our.bowl)
+      (handle-backward-package ((list bonion) +.q.vase) our.bowl)
       [cards this]
     ==
   ==
@@ -93,8 +93,8 @@
 ++  on-fail   on-fail:def
 --
 |%
-++  handle-fonion-list
-  |=  [in-list=(list fonion) our=@p eny=@]
+++  handle-forward-package
+  |=  [round-type=@tas in-list=(list fonion) our=@p eny=@]
   ^-  (quip card _state)
   =/  [out-list=(list fonion) symkey-list=(list symkey)]
     %^  spin
@@ -103,12 +103,17 @@
       ~(do handle-fonion our)
   =/  [shuffled-out-list=(list fonion) permutation=(list @)]
     (permute out-list eny)
-  :_  state(symkey-list symkey-list, permutation permutation)
+  ::  only save permutatin in %convo rounds
+  =/  updated-state
+    ?:  =(round-type %dial)
+      state
+    state(symkey-list symkey-list, permutation permutation)
+  :_  updated-state
     :_  ~
       :*
         %pass  /vuvuzela/chain/forward
         %agent  [next-server %vuvuzela-end-server]
-        %poke  %noun  !>([%fonion-list shuffled-out-list])
+        %poke  %noun  !>([%forward-package [round-type shuffled-out-list]])
       ==
 ::
 ++  handle-fonion
@@ -136,7 +141,7 @@
     !!
   [(fonion (cue u.dec)) sym]
 ::
-++  handle-bonion-list
+++  handle-backward-package
   |=  [permuted-in-list=(list bonion) our=@p]
   ^-  (quip card _state)
   =/  in-list  (unpermute permuted-in-list permutation.state)
@@ -165,6 +170,6 @@
       :*
         %pass  /vuvuzela/chain/backward
         %agent  [prev-server %vuvuzela-entry-server]
-        %poke  %noun  !>([%bonion-list out-list])
+        %poke  %noun  !>([%convo-bonion-list out-list])
       ==
 --

@@ -46,6 +46,12 @@
   ?+    mark  (on-poke:def mark vase)
       %noun
     ?+    q.vase  (on-poke:def mark vase)
+        ::  Dial another client, initiating an exchange
+        ::
+        [%dial @]
+      =^  cards  state
+      (handle-dial +.q.vase our.bowl)
+      [cards this]
         ::  Request exchange of text with some ship
         ::
         [%exchange @ @]
@@ -54,7 +60,7 @@
       [cards this]
         ::  Process response from entry-server
         ::
-        [%bonion @]
+        [%convo-bonion @]
       =^  cards  state
       (handle-bonion +.q.vase our.bowl now.bowl)
       [cards this]
@@ -82,11 +88,23 @@
       [%vuvuzela %chain ~]
     ~&  >  "fonion received by {<src.bowl>}"
     `this
+      ::
       [%vuvuzela %rounds @ ~]
     ?+    -.sign  (on-agent:def wire sign)
         %fact
-      ~&  >  "round {<+.q.cage.sign>} starts"
-      `this(state state(round !<(@ q.cage.sign), round-partner ~))
+      ?+    +.q.cage.sign  (on-agent:def wire sign)
+          [%convo @]
+        ~&  >  "{<+<.q.cage.sign>} round {<+>.q.cage.sign>} starts"
+        ::  TODO: automatically send away conversation requests
+        ::
+        `this(state state(round +>.q.cage.sign, round-partner ~))
+          ::
+          [%dial @]
+        ~&  >  "{<+<.q.cage.sign>} round {<+>.q.cage.sign>} starts"
+        ::  TODO: automatically send away dialling requests
+        ::
+        `this(state state(round +>.q.cage.sign, round-partner ~))
+      ==
     ==
   ==
 ++  on-watch  on-watch:def
@@ -96,6 +114,31 @@
 ++  on-fail   on-fail:def
 --
 |%
+++  handle-dial
+  |=  [ship=@p our=@p]
+  ^-  (quip card _state)
+  ~&  >  "dialing {<ship>}"
+  =/  [sym=symkey our-pub=pubkey their-pub=pubkey]
+    (generate-keys our ?:(=(our ~bud) ~nec ~bud))
+  =/  =crypt  (en:crub:crypto sym our)
+  =/  =dead-drop  [(mod their-pub 23) crypt]
+  =/  [sym=symkey pub=pubkey *]  (generate-keys our ~zod)
+  =/  fonion-1=fonion
+    [pub (en:crub:crypto sym (jam dead-drop))]
+  =/  [sym=symkey pub=pubkey *]  (generate-keys our ~wes)
+  =/  fonion-2=fonion
+    [pub (en:crub:crypto sym (jam fonion-1))]
+  =/  [sym=symkey pub=pubkey *]  (generate-keys our ~nus)
+  =/  fonion-3=fonion
+    [pub (en:crub:crypto sym (jam fonion-2))]
+  :_  state
+    :~
+      :*  %pass  /vuvuzela/client
+          %agent  [entry-server %vuvuzela-entry-server]
+          %poke  %noun
+          !>([%dial-fonion fonion-3])
+      ==
+    ==
 ++  handle-exchange
   |=  [text=@t ship=@p our=@p now=@da]
   =/  sym=symkey
@@ -106,14 +149,14 @@
   ~&  >>  "dead-drop hash: {<hash>}"
   =/  =crypt  (en:crub:crypto sym text)
   ~&  >  "{<+:(cue crypt)>}"
-  =/  [sym=symkey pub=pubkey]  (generate-keys our ~zod)
   =/  =dead-drop  [hash crypt]
+  =/  [sym=symkey pub=pubkey *]  (generate-keys our ~zod)
   =/  fonion-1=fonion
     [pub (en:crub:crypto sym (jam dead-drop))]
-  =/  [sym=symkey pub=pubkey]  (generate-keys our ~wes)
+  =/  [sym=symkey pub=pubkey *]  (generate-keys our ~wes)
   =/  fonion-2=fonion
     [pub (en:crub:crypto sym (jam fonion-1))]
-  =/  [sym=symkey pub=pubkey]  (generate-keys our ~nus)
+  =/  [sym=symkey pub=pubkey *]  (generate-keys our ~nus)
   =/  fonion-3=fonion
     [pub (en:crub:crypto sym (jam fonion-2))]
   :_
@@ -128,7 +171,7 @@
     :*  %pass  /vuvuzela/client
         %agent  [entry-server %vuvuzela-entry-server]
         %poke  %noun
-        !>([%fonion fonion-3])
+        !>([%convo-fonion fonion-3])
     ==
   ==
 ::
@@ -181,7 +224,7 @@
 ::
 ++  generate-keys
   |=  [our=@p their=@p]
-  ^-  [symkey pubkey]
+  ^-  [symkey pubkey pubkey]
   =/  vane  (ames !>(..zuse))
   =/  our-vane  vane
   =/  their-vane  vane
@@ -193,5 +236,5 @@
     (pit:nu:crub:crypto 512 (shaz their))
   =/  their-pub  pub:ex:crypto-core.ames-state.their-vane
   =/  sym  (derive-symmetric-key:vane their-pub our-sec)
-  [sym our-pub]
+  [sym our-pub their-pub]
 --
