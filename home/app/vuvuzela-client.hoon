@@ -6,7 +6,7 @@
     $%  state-zero
     ==
 ::
-+$  state-zero  [%0 =chat round-partner=(unit @p) round=@ num-groups=@]
++$  state-zero  [%0 =chat round-partner=(unit @p) round-number=@ num-groups=@]
 ::
 +$  card  card:agent:gall
 ::  Client-side messaging history.
@@ -104,7 +104,7 @@
         ~&  >  "{<+<.q.cage.sign>} round {<+>.q.cage.sign>} starts"
         ::  TODO: automatically send away conversation requests
         ::
-        `this(state state(round +>.q.cage.sign, round-partner ~))
+        `this(state state(round-number +>.q.cage.sign, round-partner ~))
           ::
           [%dial @ @]
         ~&  >  "{<+<.q.cage.sign>} round {<+>-.q.cage.sign>} starts, {<+>+.q.cage.sign>} groups"
@@ -113,7 +113,7 @@
         =/  num-groups  +>+.q.cage.sign
         =/  our-pub  +<:(generate-keys our.bowl end-server)
         ~&  >  "subscribing to the end-server group {<(mod our-pub num-groups)>}"
-        :_  this(state state(round +>-.q.cage.sign, round-partner ~, num-groups num-groups))
+        :_  this(state state(round-number +>-.q.cage.sign, round-partner ~, num-groups num-groups))
         :~
           :*  %pass  /vuvuzela/dials/(scot %ud (mod our-pub num-groups))/(scot %p our.bowl)
               %agent  [end-server %vuvuzela-end-server]
@@ -159,7 +159,7 @@
   |=  [text=@t ship=@p our=@p now=@da]
   =/  sym=symkey
     -:(generate-keys our ?:(=(our ~bud) ~nec ~bud))
-  =/  =hash  (sham [round.state sym])
+  =/  =hash  (sham [round-number.state sym])
   ~&  >  "sending message {<text>} to"
   ~&  >  "{<ship>} through {<entry-server>}"
   ~&  >>  "dead-drop hash: {<hash>}"

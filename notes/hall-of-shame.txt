@@ -6,3 +6,5 @@
 
 - Functions that don't change state, like all functions on the
   end server don't need =^ wrapping.
+
+- Utilize wire ordering property, finally.

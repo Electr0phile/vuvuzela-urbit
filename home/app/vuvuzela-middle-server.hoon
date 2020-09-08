@@ -24,7 +24,7 @@
   $%  state-zero
   ==
 ::
-+$  state-zero  [%0 round=@ fonion-list=(list fonion) symkey-list=(list symkey) permutation=(list @)]
++$  state-zero  [%0 symkey-list=(list symkey) permutation=(list @)]
 ::
 +$  card  card:agent:gall
 ::
@@ -41,7 +41,7 @@
 ++  on-init
   ^-  (quip card _this)
   ~&  >  '%vuvuzela-server-entry initialized successfully'
-  =.  state  [%0 0 ~ ~ ~]
+  =.  state  [%0 ~ ~]
   `this
 ::
 ++  on-save
@@ -52,7 +52,7 @@
   |=  old-state=vase
   ^-  (quip card _this)
   ~&  >  '%vuvuzela-server-entry recompiled successfully'
-  `this(state [%0 0 ~ ~ ~])
+  `this(state [%0 ~ ~])
 ::
 ++  on-poke
   |=  [=mark =vase]

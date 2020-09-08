@@ -17,7 +17,7 @@
     ==
 ::
 +$  state-zero
-    $:  [%0 round=@ forward-list=(list fonion) num-groups=@]
+    $:  [%0 num-groups=@]
     ==
 ::
 +$  card  card:agent:gall
@@ -35,7 +35,7 @@
 ++  on-init
   ^-  (quip card _this)
   ~&  >  '%vuvuzela-end-server initialized successfully'
-  =.  state  [%0 0 ~ 0]
+  =.  state  [%0 0]
   `this
 ::
 ++  on-save
@@ -46,7 +46,7 @@
   |=  old-state=vase
   ^-  (quip card _this)
   ~&  >  '%vuvuzela-end-server recompiled successfully'
-  `this(state [%0 0 ~ 0])
+  `this(state [%0 0])
 ::
 ++  on-poke
   |=  [=mark =vase]
