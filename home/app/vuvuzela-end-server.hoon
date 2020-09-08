@@ -17,12 +17,13 @@
     ==
 ::
 +$  state-zero
-    $:  [%0 round=@ forward-list=(list fonion) clients=(list @p)]
+    $:  [%0 round=@ forward-list=(list fonion) num-groups=@]
     ==
 ::
 +$  card  card:agent:gall
 ::
 ++  prev-server  ~wes
+++  entry-server  ~nus
 --
 %-  agent:dbug
 =|  state=versioned-state
@@ -34,7 +35,7 @@
 ++  on-init
   ^-  (quip card _this)
   ~&  >  '%vuvuzela-end-server initialized successfully'
-  =.  state  [%0 0 ~ ~]
+  =.  state  [%0 0 ~ 0]
   `this
 ::
 ++  on-save
@@ -45,7 +46,7 @@
   |=  old-state=vase
   ^-  (quip card _this)
   ~&  >  '%vuvuzela-end-server recompiled successfully'
-  `this(state [%0 0 ~ ~])
+  `this(state [%0 0 ~ 0])
 ::
 ++  on-poke
   |=  [=mark =vase]
@@ -59,17 +60,48 @@
       =^  cards  state
       (handle-forward-package (@tas +<.q.vase) ((list fonion) +>.q.vase) our.bowl)
       [cards this]
+        ::
+        %subscribe-for-rounds
+      :_  this
+      :~
+        :*  %pass  /vuvuzela/rounds/(scot %p our.bowl)
+            %agent  [entry-server %vuvuzela-entry-server]
+            [%watch /vuvuzela/rounds]
+        ==
+      ==
     ==
   ==
 ::
-++  on-watch  on-watch:def
+++  on-watch
+  |=  =path
+  ^-  (quip card _this)
+  ?+    path  (on-watch:def path)
+      [%vuvuzela %dials @ ~]
+    ~&  >  "got subscription from {<src.bowl>} on {<path>}"
+    `this
+  ==
 ++  on-agent
   |=  [=wire =sign:agent:gall]
   ^-  (quip card _this)
   ?+    wire  (on-agent:def wire sign)
+      ::
       [%vuvuzela %chain %backward ~]
     ~&  >>  "bonion-list delivered to prev server"
     `this
+      ::
+      [%vuvuzela %rounds @ ~]
+    ?+    -.sign  (on-agent:def wire sign)
+        %fact
+      ?+    +.q.cage.sign  (on-agent:def wire sign)
+          [%convo @]
+        ::  don't have to do anything
+        `this
+          ::
+          [%dial @ @]
+        ~&  >  "dial round starts, {<+>+.q.cage.sign>} groups"
+        `this(state state(num-groups +>+.q.cage.sign))
+      ==
+    ==
   ==
 ++  on-leave  on-leave:def
 ++  on-peek   on-peek:def
@@ -79,10 +111,10 @@
 |%
 ++  handle-forward-package
   |=  [round-type=@tas fonion-list=(list fonion) our=@p]
+  ^-  (quip card _state)
   ?:  =(round-type %dial)
     ~&  >>>  "a dial round, received {<(lent fonion-list)>} dials"
-    `state
-  ^-  (quip card _state)
+    (handle-dialling fonion-list our)
   =/  [* bonion-list=(list bonion) dead-drop-map=(map hash [@ crypt]) @]
     %:  spin
       fonion-list
@@ -102,6 +134,39 @@
       %agent  [prev-server %vuvuzela-middle-server]
       %poke  %noun  !>([%backward-package bonion-list])
     ==
+::
+++  handle-dialling
+  |=  [fonion-list=(list fonion) our=@p]
+  ^-  (quip card _state)
+  =/  dead-drop-map=(map @ (list crypt))  ~
+  =/  n  0
+  =/  len  (lent fonion-list)
+  |-
+  ?:  =(n len)
+    ~&  >>>  dead-drop-map
+    =/  keys  ~(tap in ~(key by dead-drop-map))
+    =/  len  (lent keys)
+    =/  i  0
+    =/  facts=(list card)  ~
+    |-
+    ?:  =(i len)
+      [facts state]
+    %=  $
+      i  +(i)
+      facts
+        %+  snoc  facts
+          [%give %fact ~[/vuvuzela/dials/(scot %ud (snag i keys))] %noun !>((~(got by dead-drop-map) (snag i keys)))]
+    ==
+  =/  =dead-drop  (decrypt-dead-drop (snag n fonion-list) our)
+  =/  group-list  (~(get by dead-drop-map) -.dead-drop)
+  =/  updated-group-list=(list crypt)
+    ?~  group-list
+      ~[crypt.dead-drop]
+    (snoc u.group-list crypt.dead-drop)
+  %=  $
+    dead-drop-map  (~(put by dead-drop-map) hash.dead-drop updated-group-list)
+    n  +(n)
+  ==
 ::
 ++  handle-fonion
   |_  [our=@p fonion-list=(list fonion)]

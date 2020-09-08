@@ -9,6 +9,7 @@
 ::  - restore original permutation and decrypt
 ::    bonions
 ::
+::
 /-  *vuvuzela
 /+  default-agent, dbug
 /=  ames  /sys/vane/ames
@@ -77,7 +78,7 @@
       :-
       :_  ~
         :*  %give  %fact  ~[/vuvuzela/rounds]
-            %noun  !>([%dial +(round-number.state)])
+            %noun  !>([%dial [+(round-number.state) 23]])
         ==
       %=  this
         state

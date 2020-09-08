@@ -6,7 +6,7 @@
     $%  state-zero
     ==
 ::
-+$  state-zero  [%0 =chat round-partner=(unit @p) round=@]
++$  state-zero  [%0 =chat round-partner=(unit @p) round=@ num-groups=@]
 ::
 +$  card  card:agent:gall
 ::  Client-side messaging history.
@@ -16,6 +16,7 @@
 ::  Temporary hard-coded chain.
 ::
 ++  entry-server  ~nus
+++  end-server  ~zod
 --
 %-  agent:dbug
 =|  state=versioned-state
@@ -27,7 +28,7 @@
 ++  on-init
   ^-  (quip card _this)
   ~&  >  '%vuvuzela-client initialized successfully'
-  =.  state  [%0 ~ ~ 0]
+  =.  state  [%0 ~ ~ 0 0]
   `this
 ::
 ++  on-save
@@ -38,7 +39,7 @@
   |=  old-state=vase
   ^-  (quip card _this)
   ~&  >  '%vuvuzela-client recompiled successfully, cleaning history...'
-  `this(state [%0 ~ ~ 0])
+  `this(state [%0 ~ ~ 0 0])
 ::
 ++  on-poke
   |=  [=mark =vase]
@@ -89,6 +90,12 @@
     ~&  >  "fonion received by {<src.bowl>}"
     `this
       ::
+      [%vuvuzela %dials @ @ ~]
+    ~&  >  "group wire {wire} used"
+    ::  TODO: process dialling requests
+    ::
+    `this
+      ::
       [%vuvuzela %rounds @ ~]
     ?+    -.sign  (on-agent:def wire sign)
         %fact
@@ -99,11 +106,20 @@
         ::
         `this(state state(round +>.q.cage.sign, round-partner ~))
           ::
-          [%dial @]
-        ~&  >  "{<+<.q.cage.sign>} round {<+>.q.cage.sign>} starts"
+          [%dial @ @]
+        ~&  >  "{<+<.q.cage.sign>} round {<+>-.q.cage.sign>} starts, {<+>+.q.cage.sign>} groups"
         ::  TODO: automatically send away dialling requests
         ::
-        `this(state state(round +>.q.cage.sign, round-partner ~))
+        =/  num-groups  +>+.q.cage.sign
+        =/  our-pub  +<:(generate-keys our.bowl end-server)
+        ~&  >  "subscribing to the end-server group {<(mod our-pub num-groups)>}"
+        :_  this(state state(round +>-.q.cage.sign, round-partner ~, num-groups num-groups))
+        :~
+          :*  %pass  /vuvuzela/dials/(scot %ud (mod our-pub num-groups))/(scot %p our.bowl)
+              %agent  [end-server %vuvuzela-end-server]
+              [%watch /vuvuzela/dials/(scot %ud (mod our-pub num-groups))]
+          ==
+        ==
       ==
     ==
   ==
@@ -121,7 +137,7 @@
   =/  [sym=symkey our-pub=pubkey their-pub=pubkey]
     (generate-keys our ?:(=(our ~bud) ~nec ~bud))
   =/  =crypt  (en:crub:crypto sym our)
-  =/  =dead-drop  [(mod their-pub 23) crypt]
+  =/  =dead-drop  [(mod their-pub num-groups.state) crypt]
   =/  [sym=symkey pub=pubkey *]  (generate-keys our ~zod)
   =/  fonion-1=fonion
     [pub (en:crub:crypto sym (jam dead-drop))]
