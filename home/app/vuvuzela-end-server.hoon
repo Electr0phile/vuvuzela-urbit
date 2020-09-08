@@ -80,7 +80,7 @@
 ++  handle-forward-package
   |=  [round-type=@tas fonion-list=(list fonion) our=@p]
   ?:  =(round-type %dial)
-    ~&  >>>  "a dial round, doing nothing"
+    ~&  >>>  "a dial round, received {<(lent fonion-list)>} dials"
     `state
   ^-  (quip card _state)
   =/  [* bonion-list=(list bonion) dead-drop-map=(map hash [@ crypt]) @]

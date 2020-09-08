@@ -1,5 +1,8 @@
 - List processing in the vuvuzela-end-server.hoon is horrible
-and deserves to be printed out and burned. Need to be redone.
+  and deserves to be printed out and burned. Need to be redone.
 
 - Three different apps for three different types of servers is
-ugly, need to unify in one file/app.
+  ugly, need to unify in one file/app.
+
+- Functions that don't change state, like all functions on the
+  end server don't need =^ wrapping.
