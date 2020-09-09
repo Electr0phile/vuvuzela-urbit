@@ -47,39 +47,9 @@
   ^-  (quip card _this)
   ~&  >  '%vuvuzela-end-server recompiled successfully'
   `this(state [%0 0])
+::  Across the /vuvuzela/rounds wire end server receives
+::  the update to the number of groups in the dial round.
 ::
-++  on-poke
-  |=  [=mark =vase]
-  ^-  (quip card _this)
-  ?+    mark  (on-poke:def mark vase)
-      %noun
-    ?+    q.vase  (on-poke:def mark vase)
-        ::
-        [%forward-package *]
-      ~&  >  "received forward-package"
-      =^  cards  state
-      (handle-forward-package (@tas +<.q.vase) ((list fonion) +>.q.vase) our.bowl)
-      [cards this]
-        ::
-        %subscribe-for-rounds
-      :_  this
-      :~
-        :*  %pass  /vuvuzela/rounds/(scot %p our.bowl)
-            %agent  [entry-server %vuvuzela-entry-server]
-            [%watch /vuvuzela/rounds]
-        ==
-      ==
-    ==
-  ==
-::
-++  on-watch
-  |=  =path
-  ^-  (quip card _this)
-  ?+    path  (on-watch:def path)
-      [%vuvuzela %dials @ ~]
-    ~&  >  "got subscription from {<src.bowl>} on {<path>}"
-    `this
-  ==
 ++  on-agent
   |=  [=wire =sign:agent:gall]
   ^-  (quip card _this)
@@ -103,6 +73,46 @@
       ==
     ==
   ==
+::  Each client subscribes to the corresponding group path
+::  to get its dial dead drop.
+::
+++  on-watch
+  |=  =path
+  ^-  (quip card _this)
+  ?+    path  (on-watch:def path)
+      [%vuvuzela %dials @ ~]
+    ~&  >  "got subscription from {<src.bowl>} on {<path>}"
+    `this
+  ==
+::
+++  on-poke
+  |=  [=mark =vase]
+  ^-  (quip card _this)
+  ?+    mark  (on-poke:def mark vase)
+      %noun
+    ?+    q.vase  (on-poke:def mark vase)
+        ::  Main logic of end server:
+        ::  Process incoming list of messages by matching
+        ::  messages according to their dead drop hashes.
+        ::
+        [%forward-package *]
+      ~&  >  "received forward-package"
+      =^  cards  state
+      (handle-forward-package (@tas +<.q.vase) ((list fonion) +>.q.vase) our.bowl)
+      [cards this]
+        ::  Development-only function for now:
+        ::  Subscribe to the entry server for round updates.
+        ::
+        %subscribe-for-rounds
+      :_  this
+      :~
+        :*  %pass  /vuvuzela/rounds/(scot %p our.bowl)
+            %agent  [entry-server %vuvuzela-entry-server]
+            [%watch /vuvuzela/rounds]
+        ==
+      ==
+    ==
+  ==
 ++  on-leave  on-leave:def
 ++  on-peek   on-peek:def
 ++  on-arvo   on-arvo:def
@@ -115,6 +125,12 @@
   ?:  =(round-type %dial)
     ~&  >>>  "a dial round, received {<(lent fonion-list)>} dials"
     (handle-dialling fonion-list our)
+  ::  Extremely ugly logic: forceful use of spin function.
+  ::  Much better to do the iteration manually.
+  ::
+  ::  Gist: dead-drop-map is a state which is modified during
+  ::  iteration.
+  ::
   =/  [* bonion-list=(list bonion) dead-drop-map=(map hash [@ crypt]) @]
     %:  spin
       fonion-list
@@ -125,8 +141,10 @@
       ==
       ~(do handle-fonion our fonion-list)
     ==
+  =/  temp-bonion-list=(list bonion)  (temp-handle-convo fonion-list our)
   ~&  >>  dead-drop-map
   ~&  >>  bonion-list
+  ~&  >>  temp-bonion-list
   :_  state
     :_  ~
     :*
@@ -134,6 +152,34 @@
       %agent  [prev-server %vuvuzela-middle-server]
       %poke  %noun  !>([%backward-package bonion-list])
     ==
+::
+++  temp-handle-convo
+  |=  [fonion-list=(list fonion) our=@p]
+  ^-  (list bonion)
+  =/  dead-drop-map=(map hash [@ crypt])  ~
+  =/  bonion-list=(list bonion)
+    (reap (lent fonion-list) 1.337)
+  =+
+    =/  count  0
+    =/  len  (lent fonion-list)
+    |-
+    ?:  =(count len)
+      [dead-drop-map=dead-drop-map bonion-list=bonion-list]
+    =/  =dead-drop
+      (decrypt-dead-drop (snag count fonion-list) our)
+    =/  maybe-match
+      (~(get by dead-drop-map) hash.dead-drop)
+    ?~  maybe-match
+      %=  $
+        dead-drop-map
+          %+  ~(put by dead-drop-map)
+             hash.dead-drop
+          [count crypt.dead-drop]
+        count  +(count)
+      ==
+    ::  Process match logic
+    [dead-drop-map=dead-drop-map bonion-list=bonion-list]
+  bonion-list
 ::
 ++  handle-dialling
   |=  [fonion-list=(list fonion) our=@p]
