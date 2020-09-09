@@ -1,3 +1,28 @@
+::    Vuvuzela clien
+::
+::  Talks to:
+::    - entry server
+::    - end server
+::
+::  Responsibilities:
+::    - dialling
+::    Put self-identifying information into a crypt
+::  and onion-encrypt it with temporary keys. Then
+::  receive all group dead drops from end
+::  server and try to decrypt all of the dials.
+::  Successfully decrypted dials are added to active
+::  conversations.
+::    - conversation
+::    Put message into a crypt, onion-encrypt it.
+::  Then receive response from entry server and decrypt
+::  all layers for each server in the chain.
+::    - abstraction
+::    Timed-round logic of server interaction has to
+::  be isolated from user. Implementation: when user
+::  starts a conversation with a new client, push this
+::  client into a dialling queue. Same with a message -
+::  to a message queue.
+::
 /-  *vuvuzela
 /+  default-agent, dbug
 /=  ames  /sys/vane/ames
@@ -7,12 +32,13 @@
     ==
 ::
 +$  state-zero
-  [%0 =chat round-partner=(unit @p) round-number=@ num-groups=@]
+  [%0 =chat round-partner=(unit @p) round-number=@ num-groups=@ out-message-queue=(list out-message)]
 ::
 +$  card  card:agent:gall
 ::  Client-side messaging history.
 ::
 +$  message  [date=@da text=@t my=?(%.y %.n)]
++$  out-message  [receiver=@p text=@t]
 +$  chat  (map ship=@p (list message))
 ::  Temporary hard-coded chain.
 ::
@@ -29,7 +55,7 @@
 ++  on-init
   ^-  (quip card _this)
   ~&  >  '%vuvuzela-client initialized successfully'
-  =.  state  [%0 ~ ~ 0 0]
+  =.  state  [%0 ~ ~ 0 0 ~]
   `this
 ::
 ++  on-save
@@ -40,7 +66,7 @@
   |=  old-state=vase
   ^-  (quip card _this)
   ~&  >  '%vuvuzela-client recompiled successfully, cleaning history...'
-  `this(state [%0 ~ ~ 0 0])
+  `this(state [%0 ~ ~ 0 0 ~])
 ::
 ++  on-poke
   |=  [=mark =vase]
@@ -56,10 +82,10 @@
       [cards this]
         ::  Request exchange of text with some ship
         ::
-        [%exchange @ @]
-      =^  cards  state
-      (handle-exchange +<.q.vase +>.q.vase our.bowl now.bowl)
-      [cards this]
+        [%send-message @ @]
+      =.  out-message-queue.state
+        (snoc out-message-queue.state [+>.q.vase +<.q.vase])
+      `this
         ::  Process response from entry-server
         ::
         [%convo-bonion @]
@@ -105,7 +131,10 @@
         ~&  >  "{<+<.q.cage.sign>} round {<+>.q.cage.sign>} starts"
         ::  TODO: automatically send away conversation requests
         ::
-        `this(state state(round-number +>.q.cage.sign, round-partner ~))
+        =.  state  state(round-number +>.q.cage.sign, round-partner ~)
+        =^  cards  state
+        (handle-exchange our.bowl now.bowl)
+        [cards this]
           ::
           [%dial @ @]
         ~&  >  "{<+<.q.cage.sign>} round {<+>-.q.cage.sign>} starts, {<+>+.q.cage.sign>} groups"
@@ -157,7 +186,10 @@
       ==
     ==
 ++  handle-exchange
-  |=  [text=@t ship=@p our=@p now=@da]
+  |=  [our=@p now=@da]
+  ?~  out-message-queue.state
+    `state
+  =/  [ship=@p text=@tas]  (snag 0 `(list out-message)`out-message-queue.state)
   =/  sym=symkey
     -:(generate-keys our ?:(=(our ~bud) ~nec ~bud))
   =/  =hash  (sham [round-number.state sym])
@@ -183,6 +215,8 @@
               ship
               [now text %.y]
       round-partner  (some ship)
+      out-message-queue
+        (oust [0 1] `(list out-message)`out-message-queue.state)
     ==
   :~
     :*  %pass  /vuvuzela/client
