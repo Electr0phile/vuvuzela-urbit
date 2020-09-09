@@ -6,7 +6,8 @@
     $%  state-zero
     ==
 ::
-+$  state-zero  [%0 =chat round-partner=(unit @p) round-number=@ num-groups=@]
++$  state-zero
+  [%0 =chat round-partner=(unit @p) round-number=@ num-groups=@]
 ::
 +$  card  card:agent:gall
 ::  Client-side messaging history.

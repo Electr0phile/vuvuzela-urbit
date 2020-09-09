@@ -1,14 +1,19 @@
-::  Entry server's responsibilities:
-::  - announce a round
-::  - gather requests from clients
-::  - decrypt and shuffle fonions, remember
-::    the permutation and pubkeys
-::  - send list of fonions to the next server in chain
-::  - receive a list of bonion from the
-::    next server in chain
-::  - restore original permutation and decrypt
-::    bonions
+::    Entry server
 ::
+::  Talks to:
+::    - all clients
+::    - first middle server
+::    - end server
+::
+::  Responsibilities:
+::    - forwardprop
+::    Announce a round to clients and end server.
+::  (end server needs to know dial group number).
+::  Collect all messages from clients, decrypt them once,
+::  permute, send them forward.
+::    - backprop
+::    Receive bonion list, unpermute, encrypt it with
+::  saved symkeys. Distribute messages between clients.
 ::
 /-  *vuvuzela
 /+  default-agent, dbug
@@ -89,6 +94,7 @@
             clients  ~
           ==
       ==
+        ::  add fonion from client to the list of all fonions
         ::
         [%convo-fonion @ @]
       ~&  >  "convo-fonion received"
@@ -131,7 +137,7 @@
             %pass  /vuvuzela/chain/forward
             %agent  [next-server %vuvuzela-middle-server]
             %poke  %noun
-            !>([%forward-package [%convo shuffled-fonion-list]])
+            !>([%forward [%convo shuffled-fonion-list]])
           ==
         ==
       :_  this
@@ -140,11 +146,11 @@
           %pass  /vuvuzela/chain/forward
           %agent  [next-server %vuvuzela-middle-server]
           %poke  %noun
-          !>([%forward-package [%dial shuffled-fonion-list]])
+          !>([%forward [%dial shuffled-fonion-list]])
         ==
       ==
         ::
-        [%convo-bonion-list *]
+        [%backward *]
       ^-  (quip card _this)
       =/  bonion-list
         (unpermute ((list bonion) +.q.vase) permutation.state)

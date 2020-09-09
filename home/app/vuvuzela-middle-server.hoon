@@ -1,18 +1,19 @@
-::  Middle server responsibilities:
-::  * forwardprop:
-::    - receive fonion-list from previous
-::    server in chain
-::    - decrypt every message in the list,
-::    remember symkeys!
-::    - shuffle messages, remember permutation
-::    - send these to the next server
-::  * backprop:
-::    - receive bonion-list from next
-::    server in chain
-::    - restore forwardprop order of messages
-::    using saved permutation
-::    - encrypt every message with saved symkey
-::    - send these to prev server in chain
+::    Middle server
+::
+::  Talks to:
+::    - previous server in the chain
+::    - next server in the chain
+::
+::  Responsibilities:
+::    - forwardprop
+::    Receive a fonion list. For each fonion,
+::  decrypt it with a temporary public key.
+::  Shuffle resulting list and save symkeys.
+::  Send it forward.
+::    - backprop
+::    Receive a bonion list. Restore permutation.
+::  For each bonion, encrypt it with corresponding
+::  symkey. Send it backward.
 ::
 /-  *vuvuzela
 /+  default-agent, dbug
@@ -61,16 +62,16 @@
       %noun
     ?+    q.vase  (on-poke:def mark vase)
         ::
-        [%forward-package *]
+        [%forward *]
       ~&  >  "received forward-package of type {<+<.q.vase>}"
       =^  cards  state
-      (handle-forward-package (@tas +<.q.vase) ((list fonion) +>.q.vase) our.bowl eny.bowl)
+      (handle-forward (@tas +<.q.vase) ((list fonion) +>.q.vase) our.bowl eny.bowl)
       [cards this]
         ::
-        [%backward-package *]
+        [%backward *]
       ~&  >  "received backward-package"
       =^  cards  state
-      (handle-backward-package ((list bonion) +.q.vase) our.bowl)
+      (handle-backward ((list bonion) +.q.vase) our.bowl)
       [cards this]
     ==
   ==
@@ -93,9 +94,11 @@
 ++  on-fail   on-fail:def
 --
 |%
-++  handle-forward-package
+++  handle-forward
   |=  [round-type=@tas in-list=(list fonion) our=@p eny=@]
   ^-  (quip card _state)
+  ::  apply handle-fonion to each fonion in a list and
+  ::  save symkeys. then permute the list.
   =/  [out-list=(list fonion) symkey-list=(list symkey)]
     %^  spin
       in-list
@@ -103,7 +106,8 @@
       ~(do handle-fonion our)
   =/  [shuffled-out-list=(list fonion) permutation=(list @)]
     (permute out-list eny)
-  ::  only save permutatin in %convo rounds
+  ::  only save permutation and symkeys in %convo rounds
+  ::
   =/  updated-state
     ?:  =(round-type %dial)
       state
@@ -113,8 +117,43 @@
       :*
         %pass  /vuvuzela/chain/forward
         %agent  [next-server %vuvuzela-end-server]
-        %poke  %noun  !>([%forward-package [round-type shuffled-out-list]])
+        %poke  %noun  !>([%forward [round-type shuffled-out-list]])
       ==
+::
+++  handle-backward
+  |=  [permuted-in-list=(list bonion) our=@p]
+  ^-  (quip card _state)
+  =/  in-list  (unpermute permuted-in-list permutation.state)
+  ?.  =((lent in-list) (lent symkey-list.state))
+    ~&  >>>  "bonion-list and symkey-list have different lengths!"
+    `state
+  =;  [out-list=(list bonion)]
+    :_  state(symkey-list ~)
+    :_  ~
+    :*
+      %pass  /vuvuzela/chain/backward
+      %agent  [prev-server %vuvuzela-entry-server]
+      %poke  %noun  !>([%backward out-list])
+    ==
+  ::  simply encrypt each bonion with a symkey saved from
+  ::  forwardprop.
+  ::
+  =/  out-list=(list bonion)  ~
+  =/  symkey-list  symkey-list.state
+  |-
+  ?~  in-list
+    out-list
+  ?~  symkey-list
+    out-list
+  %=  $
+    in-list  t.in-list
+    symkey-list  t.symkey-list
+    out-list
+      %+  snoc
+        out-list
+      %-  bonion
+      (en:crub:crypto i.symkey-list i.in-list)
+  ==
 ::
 ++  handle-fonion
   |_  [our=@p]
@@ -140,36 +179,4 @@
     ~&  >>>  "decryption error!"
     !!
   [(fonion (cue u.dec)) sym]
-::
-++  handle-backward-package
-  |=  [permuted-in-list=(list bonion) our=@p]
-  ^-  (quip card _state)
-  =/  in-list  (unpermute permuted-in-list permutation.state)
-  ?.  =((lent in-list) (lent symkey-list.state))
-    ~&  >>>  "bonion-list and symkey-list have different lengths!"
-    `state
-  =/  [out-list=(list bonion)]
-    =/  out-list=(list bonion)  ~
-    =/  symkey-list  symkey-list.state
-    |-
-    ?~  in-list
-      out-list
-    ?~  symkey-list
-      out-list
-    %=  $
-      in-list  t.in-list
-      symkey-list  t.symkey-list
-      out-list
-        %+  snoc
-          out-list
-        %-  bonion
-        (en:crub:crypto i.symkey-list i.in-list)
-    ==
-  :_  state(symkey-list ~)
-    :_  ~
-      :*
-        %pass  /vuvuzela/chain/backward
-        %agent  [prev-server %vuvuzela-entry-server]
-        %poke  %noun  !>([%convo-bonion-list out-list])
-      ==
 --

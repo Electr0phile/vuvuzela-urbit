@@ -1,12 +1,29 @@
-::  End server's responsibilities:
-::  - collect list of fonions from second last server
-::  - decrypt and process exchanges:
-::    * try to pair together exchanges
-::      if successful, swap their messages
-::    * if there is no pair for a certain exchange,
-::      send him a random string instead
-::  - encrypt all meassages with own secret keys
-::  - send them back as bonions
+::    End server
+::
+::  Talks to:
+::    - entry server
+::    Entry server calculates number of dialling groups
+::  each dialling round. End server needs to know it
+::  in order to protect itself from possible attacks from
+::  malicious clients.
+::    - clients
+::    Clients subscribe to the end server according to
+::  their public keys to receive dialling dead drops.
+::    - last middle server
+::    Receives fonions and either returns bonions or sends
+::  out dialling dead drops.
+::
+::  Responsibilities:
+::    - dialling
+::    When dialling forward-package is received all dialling
+::  crypts are sorted into a map according to the group they
+::  are intended for. Then each group receives their dead
+::  drops according through pubsub, which is updated each dialling
+::  round.
+::    - conversation
+::    During a conversation round each fonion is decrypted and
+::  its crypt is put into a hash table. Paired crypts are swapped
+::  and sent back, unpaired crypts receive a dummy response.
 ::
 /-  *vuvuzela
 /+  default-agent, dbug
@@ -63,8 +80,8 @@
     ?+    -.sign  (on-agent:def wire sign)
         %fact
       ?+    +.q.cage.sign  (on-agent:def wire sign)
+          ::  don't have to do anything for convo round
           [%convo @]
-        ::  don't have to do anything
         `this
           ::
           [%dial @ @]
@@ -81,7 +98,7 @@
   ^-  (quip card _this)
   ?+    path  (on-watch:def path)
       [%vuvuzela %dials @ ~]
-    ~&  >  "got subscription from {<src.bowl>} on {<path>}"
+    ~&  >  "got subscription from {<src.bowl>} to group {<+>.path>}"
     `this
   ==
 ::
@@ -91,15 +108,19 @@
   ?+    mark  (on-poke:def mark vase)
       %noun
     ?+    q.vase  (on-poke:def mark vase)
-        ::  Main logic of end server:
-        ::  Process incoming list of messages by matching
-        ::  messages according to their dead drop hashes.
         ::
-        [%forward-package *]
+        [%forward *]
       ~&  >  "received forward-package"
-      =^  cards  state
-      (handle-forward-package (@tas +<.q.vase) ((list fonion) +>.q.vase) our.bowl)
-      [cards this]
+      ?+    (@tas +<.q.vase)  (on-poke:def mark vase)
+          ::
+          %convo
+        :_  this
+        (respond-convo ((list fonion) +>.q.vase) our.bowl)
+          ::
+          %dial
+        :_  this
+        (respond-dial ((list fonion) +>.q.vase) our.bowl)
+      ==
         ::  Development-only function for now:
         ::  Subscribe to the entry server for round updates.
         ::
@@ -119,141 +140,103 @@
 ++  on-fail   on-fail:def
 --
 |%
-++  handle-forward-package
-  |=  [round-type=@tas fonion-list=(list fonion) our=@p]
-  ^-  (quip card _state)
-  ?:  =(round-type %dial)
-    ~&  >>>  "a dial round, received {<(lent fonion-list)>} dials"
-    (handle-dialling fonion-list our)
-  ::  Extremely ugly logic: forceful use of spin function.
-  ::  Much better to do the iteration manually.
+++  respond-convo
+  |=  [fonion-list=(list fonion) our=@p]
+  ^-  (list card)
+  =/  dead-drop-map=(map hash [@ crypt])  ~
+  =/  bonion-list=(list bonion)
+    (reap (lent fonion-list) 1.337)
+  =/  count  0
+  =/  len  (lent fonion-list)
+  ::  Main loop: step through fonion-list.
+  ::  Decrypt each fonion. In case the hash is
+  ::  encountered for the first time - store crypt
+  ::  in a map. Otherwise - swap crypts, encrypt and
+  ::  send back.
   ::
-  ::  Gist: dead-drop-map is a state which is modified during
-  ::  iteration.
-  ::
-  =/  [* bonion-list=(list bonion) dead-drop-map=(map hash [@ crypt]) @]
-    %:  spin
-      fonion-list
-      :*
-        (reap (lent fonion-list) 1.337)
-        `(map hash fonion)`~
-        0
-      ==
-      ~(do handle-fonion our fonion-list)
-    ==
-  =/  temp-bonion-list=(list bonion)  (temp-handle-convo fonion-list our)
-  ~&  >>  dead-drop-map
-  ~&  >>  bonion-list
-  ~&  >>  temp-bonion-list
-  :_  state
+  |-
+  ?:  =(count len)
     :_  ~
     :*
       %pass  /vuvuzela/chain/backward
       %agent  [prev-server %vuvuzela-middle-server]
-      %poke  %noun  !>([%backward-package bonion-list])
+      %poke  %noun  !>([%backward bonion-list])
     ==
+  =/  fonion  (snag count fonion-list)
+  =/  =dead-drop
+    (decrypt-dead-drop fonion our)
+  =/  maybe-match
+    (~(get by dead-drop-map) hash.dead-drop)
+  ?~  maybe-match
+    %=  $
+      dead-drop-map
+        %+  ~(put by dead-drop-map)
+           hash.dead-drop
+        [count crypt.dead-drop]
+      count  +(count)
+    ==
+  ::  Process match logic
+  =/  index  -.u.maybe-match
+  =/  client1-pub=pubkey  pub:(snag index fonion-list)
+  =/  client2-pub=pubkey  pub.fonion
+  =/  reply-to-client1
+    %^  encrypt-reply-text
+      crypt.dead-drop  our  client1-pub
+  =/  reply-to-client2
+    %^  encrypt-reply-text
+      +.u.maybe-match  our  client2-pub
+  =/  updated-bonion-list
+    %^  snap
+      %^  snap
+        bonion-list  count  reply-to-client2
+      index
+      reply-to-client1
+  %=  $
+    bonion-list  updated-bonion-list
+    dead-drop-map
+      (~(del by dead-drop-map) hash.dead-drop)
+    count  +(count)
+  ==
 ::
-++  temp-handle-convo
+++  respond-dial
   |=  [fonion-list=(list fonion) our=@p]
-  ^-  (list bonion)
-  =/  dead-drop-map=(map hash [@ crypt])  ~
-  =/  bonion-list=(list bonion)
-    (reap (lent fonion-list) 1.337)
-  =+
-    =/  count  0
-    =/  len  (lent fonion-list)
-    |-
-    ?:  =(count len)
-      [dead-drop-map=dead-drop-map bonion-list=bonion-list]
-    =/  =dead-drop
-      (decrypt-dead-drop (snag count fonion-list) our)
-    =/  maybe-match
-      (~(get by dead-drop-map) hash.dead-drop)
-    ?~  maybe-match
-      %=  $
-        dead-drop-map
-          %+  ~(put by dead-drop-map)
-             hash.dead-drop
-          [count crypt.dead-drop]
-        count  +(count)
-      ==
-    ::  Process match logic
-    [dead-drop-map=dead-drop-map bonion-list=bonion-list]
-  bonion-list
-::
-++  handle-dialling
-  |=  [fonion-list=(list fonion) our=@p]
-  ^-  (quip card _state)
+  ^-  (list card)
   =/  dead-drop-map=(map @ (list crypt))  ~
   =/  n  0
   =/  len  (lent fonion-list)
+  ::  Main loop: step through fonion-list. For each dead
+  ::  drop put its crypt into a list according to hash
+  ::  (group number).
+  ::
+  ::  After that send out a pubsub update to each group with
+  ::  their dead-drops.
+  ::
   |-
-  ?:  =(n len)
-    ~&  >>>  dead-drop-map
-    =/  keys  ~(tap in ~(key by dead-drop-map))
-    =/  len  (lent keys)
-    =/  i  0
-    =/  facts=(list card)  ~
-    |-
-    ?:  =(i len)
-      [facts state]
+  ?.  =(n len)
+    =/  =dead-drop  (decrypt-dead-drop (snag n fonion-list) our)
+    =/  group-list  (~(get by dead-drop-map) -.dead-drop)
+    =/  updated-group-list=(list crypt)
+      ?~  group-list
+        ~[crypt.dead-drop]
+      (snoc u.group-list crypt.dead-drop)
     %=  $
-      i  +(i)
-      facts
-        %+  snoc  facts
-          [%give %fact ~[/vuvuzela/dials/(scot %ud (snag i keys))] %noun !>((~(got by dead-drop-map) (snag i keys)))]
+      dead-drop-map  (~(put by dead-drop-map) hash.dead-drop updated-group-list)
+      n  +(n)
     ==
-  =/  =dead-drop  (decrypt-dead-drop (snag n fonion-list) our)
-  =/  group-list  (~(get by dead-drop-map) -.dead-drop)
-  =/  updated-group-list=(list crypt)
-    ?~  group-list
-      ~[crypt.dead-drop]
-    (snoc u.group-list crypt.dead-drop)
+  ~&  >>>  dead-drop-map
+  =/  keys  ~(tap in ~(key by dead-drop-map))
+  =/  len  (lent keys)
+  =/  i  0
+  =/  facts=(list card)  ~
+  |-
+  ?:  =(i len)
+    facts
   %=  $
-    dead-drop-map  (~(put by dead-drop-map) hash.dead-drop updated-group-list)
-    n  +(n)
+    i  +(i)
+    facts
+      %+  snoc  facts
+        [%give %fact ~[/vuvuzela/dials/(scot %ud (snag i keys))] %noun !>((~(got by dead-drop-map) (snag i keys)))]
   ==
-::
-++  handle-fonion
-  |_  [our=@p fonion-list=(list fonion)]
-  ++  do
-    |=
-      [=fonion bonion-list=(list bonion) dead-drop-map=(map hash [@ crypt]) count=@]
-    ^-  [~ (list bonion) (map hash [@ crypt]) @]
-    =/  =dead-drop
-      (decrypt-dead-drop fonion our)
-    =/  maybe-match
-      (~(get by dead-drop-map) hash.dead-drop)
-    ?~  maybe-match
-      :*
-        ~  bonion-list
-        %+  ~(put by dead-drop-map)
-          hash.dead-drop
-          [count crypt.dead-drop]
-        +(count)
-      ==
-    ~&  >  "found match!"
-    =/  index  -.u.maybe-match
-    =/  client1-pub=pubkey  pub:(snag index fonion-list)
-    =/  client2-pub=pubkey  pub.fonion
-    =/  reply-to-client1
-      %^  encrypt-reply-text
-        crypt.dead-drop  our  client1-pub
-    =/  reply-to-client2
-      %^  encrypt-reply-text
-        +.u.maybe-match  our  client2-pub
-    =/  updated-bonion-list
-      %^  snap
-        %^  snap
-          bonion-list  count  reply-to-client2
-        index
-        reply-to-client1
-    :*
-      ~  updated-bonion-list
-      (~(del by dead-drop-map) hash.dead-drop)
-      +(count)
-    ==
-  --
 ::
 ++  encrypt-reply-text
   |=  [message=crypt our=@p their-pub=pubkey]
