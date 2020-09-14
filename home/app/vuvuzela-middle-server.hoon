@@ -97,6 +97,7 @@
 ++  handle-forward
   |=  [round-type=@tas in-list=(list fonion) our=@p eny=@]
   ^-  (quip card _state)
+  ~&  >  in-list
   ::  apply handle-fonion to each fonion in a list and
   ::  save symkeys. then permute the list.
   =/  [out-list=(list fonion) symkey-list=(list symkey)]
@@ -171,6 +172,7 @@
   =.  crypto-core.ames-state.vane
     (pit:nu:crub:crypto 512 (shaz our))
   =/  our-sec  sec:ex:crypto-core.ames-state.vane
+  ~&  >  "decrypting.."
   =/  sym
     (derive-symmetric-key:vane pub.onion our-sec)
   =/  dec=(unit @)

@@ -168,21 +168,13 @@
     (generate-keys our ?:(=(our ~bud) ~nec ~bud))
   =/  =crypt  (en:crub:crypto sym our)
   =/  =dead-drop  [(mod their-pub num-groups.state) crypt]
-  =/  [sym=symkey pub=pubkey *]  (generate-keys our ~zod)
-  =/  fonion-1=fonion
-    [pub (en:crub:crypto sym (jam dead-drop))]
-  =/  [sym=symkey pub=pubkey *]  (generate-keys our ~wes)
-  =/  fonion-2=fonion
-    [pub (en:crub:crypto sym (jam fonion-1))]
-  =/  [sym=symkey pub=pubkey *]  (generate-keys our ~nus)
-  =/  fonion-3=fonion
-    [pub (en:crub:crypto sym (jam fonion-2))]
+  =/  =fonion  (onion-encrypt dead-drop our)
   :_  state
     :~
       :*  %pass  /vuvuzela/client
           %agent  [entry-server %vuvuzela-entry-server]
           %poke  %noun
-          !>([%dial-fonion fonion-3])
+          !>([%dial-fonion fonion])
       ==
     ==
 ++  handle-exchange
@@ -199,15 +191,7 @@
   =/  =crypt  (en:crub:crypto sym text)
   ~&  >  "{<+:(cue crypt)>}"
   =/  =dead-drop  [hash crypt]
-  =/  [sym=symkey pub=pubkey *]  (generate-keys our ~zod)
-  =/  fonion-1=fonion
-    [pub (en:crub:crypto sym (jam dead-drop))]
-  =/  [sym=symkey pub=pubkey *]  (generate-keys our ~wes)
-  =/  fonion-2=fonion
-    [pub (en:crub:crypto sym (jam fonion-1))]
-  =/  [sym=symkey pub=pubkey *]  (generate-keys our ~nus)
-  =/  fonion-3=fonion
-    [pub (en:crub:crypto sym (jam fonion-2))]
+  =/  =fonion  (onion-encrypt dead-drop our)
   :_
     %=  state
       chat  %^  update-chat
@@ -222,40 +206,31 @@
     :*  %pass  /vuvuzela/client
         %agent  [entry-server %vuvuzela-entry-server]
         %poke  %noun
-        !>([%convo-fonion fonion-3])
+        !>([%convo-fonion fonion])
     ==
   ==
 ::
+++  onion-encrypt
+  |=  [=dead-drop our=@p]
+  ^-  fonion
+  =/  fonion-1=fonion  (create-fonion dead-drop our ~zod)
+  =/  fonion-2=fonion  (create-fonion fonion-1 our ~wes)
+  =/  fonion-3=fonion  (create-fonion fonion-2 our ~nus)
+  fonion-3
+::
+++  create-fonion
+  |=  [in=?(dead-drop fonion) our=@p their=@p]
+  ^-  fonion
+  =/  [sym=symkey pub=pubkey *]  (generate-keys our their)
+  [pub (en:crub:crypto sym (jam in))]
+::
 ++  handle-bonion
-  |=  [=bonion our=@p now=@da]
+  |=  [in=bonion our=@p now=@da]
   ^-  (quip card _state)
   ?~  round-partner.state
     ~&  >>>  "mistakenly received message"
     `state
-  =/  key  -:(generate-keys our ~nus)
-  =/  dec=(unit @)  (de:crub:crypto key bonion)
-  ?~  dec
-    ~&  >>>  "error decrypting ~nec layer"
-    `state
-  =/  key  -:(generate-keys our ~wes)
-  =/  dec=(unit @)  (de:crub:crypto key u.dec)
-  ?~  dec
-    ~&  >>>  "error decrypting ~wes layer"
-    `state
-  ?:  =(1.337 u.dec)
-    ~&  >>>  "partner did not receive message"
-    `state
-  =/  key  -:(generate-keys our ~zod)
-  =/  dec=(unit @)  (de:crub:crypto key u.dec)
-  ?~  dec
-    ~&  >>>  "error decrypting ~zod layer"
-    `state
-  =/  key  -:(generate-keys our ?:(=(our ~bud) ~nec ~bud))
-  =/  dec=(unit @)  (de:crub:crypto key u.dec)
-  ?~  dec
-    ~&  >>>  "error decrypting partner layer"
-    `state
-  =/  text=@t  u.dec
+  =/  text=@t  (onion-decrypt in our)
   ~&  >>  "received message {<text>} from {<u.round-partner.state>}"
   :-  ~
   %=  state
@@ -266,11 +241,26 @@
             [now text %.n]
   ==
 ::
-++  update-chat
-  |=  [=chat ship=@p =message]
-  =/  messages  (fall (~(get by chat) ship) ~)
-  =/  updated-messages  (snoc messages message)
-  (~(put by chat) ship updated-messages)
+++  onion-decrypt
+  |=  [in=bonion our=@p]
+  ^-  @t
+  =/  bonion-1  (bonion (decrypt-bonion in our ~nus))
+  =/  bonion-2  (bonion (decrypt-bonion bonion-1 our ~wes))
+  ?:  =(1.337 bonion-2)
+    ~&  >>>  "partner did not receive message"
+    !!
+  =/  bonion-3  (bonion (decrypt-bonion bonion-2 our ~zod))
+  (@t (decrypt-bonion bonion-3 our ?:(=(our ~bud) ~nec ~bud)))
+::
+++  decrypt-bonion
+  |=  [in=bonion our=@p their=@p]
+  ^-  ?(bonion @t)
+  =/  key  -:(generate-keys our their)
+  =/  dec=(unit @)  (de:crub:crypto key in)
+  ?~  dec
+    ~&  >>>  "error decrypting {<their>} layer"
+    !!
+  u.dec
 ::  Create fake keys for testing fake ships
 ::
 ++  generate-keys
@@ -288,4 +278,10 @@
   =/  their-pub  pub:ex:crypto-core.ames-state.their-vane
   =/  sym  (derive-symmetric-key:vane their-pub our-sec)
   [sym our-pub their-pub]
+::
+++  update-chat
+  |=  [=chat ship=@p =message]
+  =/  messages  (fall (~(get by chat) ship) ~)
+  =/  updated-messages  (snoc messages message)
+  (~(put by chat) ship updated-messages)
 --
