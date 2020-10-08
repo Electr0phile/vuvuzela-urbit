@@ -25,12 +25,9 @@
   $%  state-zero
   ==
 ::
-+$  state-zero  [%0 symkey-list=(list symkey) permutation=(list @)]
++$  state-zero  [%0 symkey-list=(list symkey) permutation=(list @) prev-server=(unit @p) next-server=(unit @p)]
 ::
 +$  card  card:agent:gall
-::
-++  next-server  ~zod
-++  prev-server  ~nus
 --
 %-  agent:dbug
 =|  state=versioned-state
@@ -42,7 +39,7 @@
 ++  on-init
   ^-  (quip card _this)
   ~&  >  '%vuvuzela-server-entry initialized successfully'
-  =.  state  [%0 ~ ~]
+  =.  state  [%0 ~ ~ ~ ~]
   `this
 ::
 ++  on-save
@@ -53,7 +50,7 @@
   |=  old-state=vase
   ^-  (quip card _this)
   ~&  >  '%vuvuzela-server-entry recompiled successfully'
-  `this(state [%0 ~ ~])
+  `this(state [%0 ~ ~ (some ~nus) (some ~zod)])
 ::
 ++  on-poke
   |=  [=mark =vase]
@@ -61,6 +58,10 @@
   ?+    mark  (on-poke:def mark vase)
       %noun
     ?+    q.vase  (on-poke:def mark vase)
+        ::  Set up prev and next servers
+        ::
+        [%chain @ @]
+      `this(state state(prev-server (some +<.q.vase), next-server (some +>.q.vase)))
         ::
         [%forward *]
       ~&  >  "received forward-package of type {<+<.q.vase>}"
@@ -97,6 +98,10 @@
 ++  handle-forward
   |=  [round-type=@tas in-list=(list fonion) our=@p eny=@]
   ^-  (quip card _state)
+  ?~  next-server.state
+    ~&  >>>  "next-server is not specified"
+    `state
+  =/  next-server  u.next-server.state
   ~&  >  in-list
   ::  apply handle-fonion to each fonion in a list and
   ::  save symkeys. then permute the list.
@@ -124,6 +129,10 @@
 ++  handle-backward
   |=  [permuted-in-list=(list bonion) our=@p]
   ^-  (quip card _state)
+  ?~  prev-server.state
+    ~&  >>>  "prev-server is not specified"
+    `state
+  =/  prev-server  u.prev-server.state
   =/  in-list  (unpermute permuted-in-list permutation.state)
   ?.  =((lent in-list) (lent symkey-list.state))
     ~&  >>>  "bonion-list and symkey-list have different lengths!"

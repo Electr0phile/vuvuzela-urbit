@@ -25,11 +25,9 @@
   $%  state-zero
   ==
 ::
-+$  state-zero  [%0 round-number=@ round-type=?(%convo %dial) fonion-list=(list fonion) clients=(list [@p symkey]) permutation=(list @)]
++$  state-zero  [%0 round-number=@ round-type=?(%convo %dial) fonion-list=(list fonion) clients=(list [@p symkey]) permutation=(list @) next-server=(unit @p)]
 ::
 +$  card  card:agent:gall
-::
-++  next-server  ~wes
 --
 %-  agent:dbug
 =|  state=versioned-state
@@ -41,7 +39,7 @@
 ++  on-init
   ^-  (quip card _this)
   ~&  >  '%vuvuzela-server-entry initialized successfully'
-  =.  state  [%0 0 %dial ~ ~ ~]
+  =.  state  [%0 0 %dial ~ ~ ~ ~]
   `this
 ::
 ++  on-save
@@ -52,7 +50,7 @@
   |=  old-state=vase
   ^-  (quip card _this)
   ~&  >  '%vuvuzela-server-entry recompiled successfully'
-  `this(state [%0 0 %dial ~ ~ ~])
+  `this(state [%0 0 %dial ~ ~ ~ (some ~wes)])
 :::
 ++  on-poke
   |=  [=mark =vase]
@@ -60,6 +58,10 @@
   ?+    mark  (on-poke:def mark vase)
       %noun
     ?+    q.vase  (on-poke:def mark vase)
+        ::  Set up next server
+        ::
+        [%chain @]
+      `this(state state(next-server (some +.q.vase)))
         ::
         %start-convo-round
       ~&  >  "starting convo round {<+(round-number.state)>}"
@@ -128,6 +130,10 @@
         ::
         %end-round
       ^-  (quip card _this)
+      ?~  next-server.state
+        ~&  >>>  "next-server is not specified"
+        `this
+      =/  next-server  u.next-server.state
       =/  [shuffled-fonion-list=(list fonion) permutation=(list @)]
         (permute fonion-list.state eny.bowl)
       ?:  =(%convo round-type.state)

@@ -34,13 +34,10 @@
     ==
 ::
 +$  state-zero
-    $:  [%0 num-groups=@]
+    $:  [%0 num-groups=@ prev-server=(unit @p) entry-server=(unit @p)]
     ==
 ::
 +$  card  card:agent:gall
-::
-++  prev-server  ~wes
-++  entry-server  ~nus
 --
 %-  agent:dbug
 =|  state=versioned-state
@@ -52,7 +49,7 @@
 ++  on-init
   ^-  (quip card _this)
   ~&  >  '%vuvuzela-end-server initialized successfully'
-  =.  state  [%0 0]
+  =.  state  [%0 0 ~ ~]
   `this
 ::
 ++  on-save
@@ -63,7 +60,7 @@
   |=  old-state=vase
   ^-  (quip card _this)
   ~&  >  '%vuvuzela-end-server recompiled successfully'
-  `this(state [%0 0])
+  `this(state [%0 0 ~ ~])
 ::  Across the /vuvuzela/rounds wire end server receives
 ::  the update to the number of groups in the dial round.
 ::
@@ -108,6 +105,10 @@
   ?+    mark  (on-poke:def mark vase)
       %noun
     ?+    q.vase  (on-poke:def mark vase)
+        ::  Set up prev and entry servers
+        ::
+        [%chain @ @]
+      `this(state state(prev-server (some +<.q.vase), entry-server (some +>.q.vase)))
         ::
         [%forward *]
       ~&  >  "received forward-package"
@@ -125,6 +126,10 @@
         ::  Subscribe to the entry server for round updates.
         ::
         %subscribe-for-rounds
+      ?~  entry-server.state
+        ~&  >>>  "prev-server is not specified"
+        `this
+      =/  entry-server  u.entry-server.state
       :_  this
       :~
         :*  %pass  /vuvuzela/rounds/(scot %p our.bowl)
@@ -143,6 +148,10 @@
 ++  respond-convo
   |=  [fonion-list=(list fonion) our=@p]
   ^-  (list card)
+  ?~  prev-server.state
+    ~&  >>>  "prev-server is not specified"
+    ~
+  =/  prev-server  u.prev-server.state
   =/  dead-drop-map=(map hash [@ crypt])  ~
   =/  bonion-list=(list bonion)
     (reap (lent fonion-list) 1.337)
@@ -201,6 +210,10 @@
 ++  respond-dial
   |=  [fonion-list=(list fonion) our=@p]
   ^-  (list card)
+  ?~  entry-server.state
+    ~&  >>>  "prev-server is not specified"
+    ~
+  =/  entry-server  u.entry-server.state
   =/  dead-drop-map=(map @ (list crypt))  ~
   =/  n  0
   =/  len  (lent fonion-list)
