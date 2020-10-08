@@ -32,7 +32,7 @@
     ==
 ::
 +$  state-zero
-  [%0 =chat round-partner=(unit @p) round-number=@ num-groups=@ out-message-queue=(list out-message)]
+  [%0 =chat round-partner=(unit @p) round-number=@ num-groups=@ out-message-queue=(list out-message) entry-server=(unit @p) end-server=(unit @p)]
 ::
 +$  card  card:agent:gall
 ::  Client-side messaging history.
@@ -40,10 +40,6 @@
 +$  message  [date=@da text=@t my=?(%.y %.n)]
 +$  out-message  [receiver=@p text=@t]
 +$  chat  (map ship=@p (list message))
-::  Temporary hard-coded chain.
-::
-++  entry-server  ~nus
-++  end-server  ~zod
 --
 %-  agent:dbug
 =|  state=versioned-state
@@ -55,7 +51,7 @@
 ++  on-init
   ^-  (quip card _this)
   ~&  >  '%vuvuzela-client initialized successfully'
-  =.  state  [%0 ~ ~ 0 0 ~]
+  =.  state  [%0 ~ ~ 0 0 ~ ~ ~]
   `this
 ::
 ++  on-save
@@ -66,7 +62,7 @@
   |=  old-state=vase
   ^-  (quip card _this)
   ~&  >  '%vuvuzela-client recompiled successfully, cleaning history...'
-  `this(state [%0 ~ ~ 0 0 ~])
+  `this(state [%0 ~ ~ 0 0 ~ (some ~nus) (some ~zod)])
 ::
 ++  on-poke
   |=  [=mark =vase]
@@ -74,6 +70,10 @@
   ?+    mark  (on-poke:def mark vase)
       %noun
     ?+    q.vase  (on-poke:def mark vase)
+        ::  Set up entry and end servers
+        ::
+        [%chain @ @]
+      `this(state state(entry-server (some +<.q.vase), end-server (some +>.q.vase)))
         ::  Dial another client, initiating an exchange
         ::
         [%dial @]
@@ -82,7 +82,11 @@
       [cards this]
         ::  Request exchange of text with some ship
         ::
+        ::
         [%send-message @ @]
+      ?~  entry-server.state
+        ~&  >>>  "entry-server is not specified"
+        `this
       =.  out-message-queue.state
         (snoc out-message-queue.state [+>.q.vase +<.q.vase])
       `this
@@ -94,6 +98,10 @@
       [cards this]
         ::
         %subscribe-for-rounds
+      ?~  entry-server.state
+        ~&  >>>  "entry-server is not specified"
+        `this
+      =/  entry-server  u.entry-server.state
       :_  this
       :~
         :*  %pass  /vuvuzela/rounds/(scot %p our.bowl)
@@ -140,6 +148,10 @@
         ~&  >  "{<+<.q.cage.sign>} round {<+>-.q.cage.sign>} starts, {<+>+.q.cage.sign>} groups"
         ::  TODO: automatically send away dialling requests
         ::
+        ?~  end-server.state
+          ~&  >>>  "end-server is not specified"
+          `this
+        =/  end-server  u.end-server.state
         =/  num-groups  +>+.q.cage.sign
         =/  our-pub  +<:(generate-keys our.bowl end-server)
         ~&  >  "subscribing to the end-server group {<(mod our-pub num-groups)>}"
@@ -163,6 +175,10 @@
 ++  handle-dial
   |=  [ship=@p our=@p]
   ^-  (quip card _state)
+  ?~  entry-server.state
+    ~&  >>>  "entry-server is not specified"
+    `state
+  =/  entry-server  u.entry-server.state
   ~&  >  "dialing {<ship>}"
   =/  [sym=symkey our-pub=pubkey their-pub=pubkey]
     (generate-keys our ?:(=(our ~bud) ~nec ~bud))
@@ -179,6 +195,10 @@
     ==
 ++  handle-exchange
   |=  [our=@p now=@da]
+  ?~  entry-server.state
+    ~&  >>>  "entry-server is not specified"
+    `state
+  =/  entry-server  u.entry-server.state
   ?~  out-message-queue.state
     `state
   =/  [ship=@p text=@tas]  (snag 0 `(list out-message)`out-message-queue.state)
